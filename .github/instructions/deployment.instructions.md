@@ -7,3 +7,11 @@
 ## Secrets & Umgebungsvariablen
 - Konfiguriere sensible Variablen (z. B. `VITE_SUPABASE_URL` und `VITE_SUPABASE_ANON_KEY`) in den GitHub Repository Secrets under **Settings → Secrets and Variables → Actions**.
 - Lokale Konfigurationen erfolgen ausschließlich über eine nicht committete `.env` Datei (Nutze `.env.example` als Vorlage).
+
+# Deployment-Regeln
+- Vor Deployment alle relevanten Build-/Smoke-Checks ausfuehren.
+- Keine sensitiven Daten in oeffentlichen Artefakten veroeffentlichen.
+- Release-Aenderungen kurz im Changelog dokumentieren.
+- Konfigurationsaenderungen versioniert und nachvollziehbar halten.
+- Rollback-Pfad fuer kritische Aenderungen benennen.
+

@@ -17,3 +17,11 @@
   user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL
   ```
 - **RLS-Policies:** Definiere Policies so, dass Benutzer ausschließlich Lese- und Schreibzugriff auf Zeilen erhalten, bei denen `user_id = auth.uid()` gilt.
+
+# Weitere Datenbank-Regeln
+- RLS standardmaessig aktivieren und Policies explizit definieren.
+- Keine service_role Secrets im Frontend speichern.
+- Schema-Aenderungen rueckwaertskompatibel planen.
+- SQL-Objekte eindeutig und konsistent benennen.
+- Vor Release Migrationen in Testumgebung pruefen.
+- Supabase edge functions deployments duerfen niemals eigenständig deployed werden, sondern muessen immer vom user ueber supabase dashboard oder das lokale terminal initiiert werden.
