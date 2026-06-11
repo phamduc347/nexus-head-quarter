@@ -53,15 +53,15 @@
                     <form id="login-form">
                         <div class="form-group">
                             <label for="login-email">E-Mail Adresse</label>
-                            <input type="email" id="login-email" placeholder="name@domain.com" required autocomplete="username">
+                            <input type="email" id="login-email" name="username" placeholder="name@domain.com" required autocomplete="username">
                         </div>
                         <div class="form-group">
                             <label for="login-password">Passwort</label>
-                            <input type="password" id="login-password" placeholder="••••••••" required autocomplete="current-password">
+                            <input type="password" id="login-password" name="password" placeholder="••••••••" required autocomplete="current-password">
                         </div>
                         <div class="form-group hidden" id="register-confirm-group">
                             <label for="login-confirm-password">Passwort bestätigen</label>
-                            <input type="password" id="login-confirm-password" placeholder="••••••••" autocomplete="new-password">
+                            <input type="password" id="login-confirm-password" name="confirm-password" placeholder="••••••••" autocomplete="new-password">
                         </div>
                         <div class="auth-error-message hidden" id="auth-error"></div>
                         <button type="submit" class="btn-primary" id="auth-submit-btn">Anmelden</button>
