@@ -665,9 +665,25 @@ function setSubmitLoading(isLoading) {
     }
 }
 
+function loadConfigScript() {
+    return new Promise((resolve) => {
+        // Skip loading config.js in happy-dom/vitest test environment to avoid warnings
+        if (typeof window !== 'undefined' && window.happyDOM) {
+            resolve();
+            return;
+        }
+        const script = document.createElement('script');
+        script.src = './config.js';
+        script.onload = () => resolve();
+        script.onerror = () => resolve(); // continue even if script fails to load
+        document.body.appendChild(script);
+    });
+}
+
 // Bootstrap execution
-const startApp = () => {
+const startApp = async () => {
     initNavigation();
+    await loadConfigScript();
     initAuth();
 };
 
