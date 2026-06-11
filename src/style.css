@@ -1064,20 +1064,13 @@ input {
    =================================================================== */
 @media (min-width: 768px) {
     :root {
-        --max-width: 1024px;
+        --max-width: 100%;
     }
 
-    /* Desktop frame styling for the app container */
-    #app {
-        border-left: 1px solid var(--border-color);
-        border-right: 1px solid var(--border-color);
-        box-shadow: 0 0 40px rgba(0, 0, 0, 0.35);
-    }
-
-    /* Grid layout for screens */
+    /* Grid layout for screens - dynamically adapt columns to screen width */
     .screen-content {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
         gap: var(--space-lg);
         align-content: start;
         padding: 0 var(--space-2xl) 120px;
@@ -1139,3 +1132,189 @@ input {
         transition: bottom var(--transition-normal);
     }
 }
+
+/* ===================================================================
+   WIDGET MANAGEMENT (DRAG, DELETE, ADD)
+   =================================================================== */
+
+.widget-wrapper {
+    position: relative;
+    user-select: none;
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+/* Dragging state */
+.widget-wrapper.dragging {
+    opacity: 0.5;
+    transform: scale(0.96);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+}
+
+/* Edit Mode styling */
+.edit-active .widget-wrapper {
+    border: 2px dashed var(--accent-blue);
+    border-radius: var(--radius-lg);
+    padding: var(--space-xs);
+    margin: calc(-1 * var(--space-xs) - 2px); /* offset padding & border */
+}
+
+/* Edit Mode Controls */
+.widget-controls {
+    display: none;
+    position: absolute;
+    top: -12px;
+    left: -12px;
+    right: -12px;
+    justify-content: space-between;
+    z-index: 10;
+    pointer-events: none;
+}
+
+.edit-active .widget-wrapper .widget-controls {
+    display: flex;
+}
+
+.widget-control-btn {
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-full);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    cursor: pointer;
+    transition: transform var(--transition-fast);
+    color: #ffffff !important;
+}
+
+.widget-control-btn:hover {
+    transform: scale(1.1);
+}
+
+.widget-control-btn .material-symbols-outlined {
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.drag-handle {
+    background: var(--accent-blue);
+    cursor: grab;
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+.delete-btn {
+    background: var(--accent-red);
+}
+
+/* Add Widget Action Button */
+.btn-add-widget {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    width: 100%;
+    padding: var(--space-lg);
+    background: var(--bg-secondary);
+    border: 2px dashed var(--border-strong);
+    border-radius: var(--radius-lg);
+    color: var(--accent-blue);
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    grid-column: 1 / -1;
+}
+
+.btn-add-widget:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--accent-blue);
+    transform: translateY(-2px);
+}
+
+.edit-active #add-widget-btn {
+    display: flex;
+}
+
+/* Add Widget Dialog Modal */
+.widget-dialog {
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-lg);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    color: var(--text-primary);
+    padding: 0;
+    width: calc(100% - 32px);
+    max-width: 480px;
+    margin: auto;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.15);
+}
+
+.widget-dialog::backdrop {
+    background: rgba(15, 17, 21, 0.4);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+.dialog-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-lg) var(--space-xl);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.dialog-header h3 {
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.dialog-body {
+    padding: var(--space-xl);
+}
+
+.widget-options-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-md);
+}
+
+.widget-option-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    padding: var(--space-md);
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.widget-option-item:hover {
+    background: var(--bg-hover);
+    border-color: var(--accent-blue);
+    transform: translateY(-2px);
+    color: var(--text-primary);
+}
+
+.widget-option-item .material-symbols-outlined {
+    font-size: 26px;
+    margin-bottom: 2px;
+}
+
+.ql-blue-icon { color: var(--accent-blue); }
+.ql-amber-icon { color: var(--accent-amber); }
+.ql-purple-icon { color: var(--accent-purple); }
+

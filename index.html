@@ -21,6 +21,9 @@
                     <span class="material-symbols-outlined">menu</span>
                 </button>
                 <h1 class="header-title">Mein Orga Hub</h1>
+                <button id="edit-mode-btn" class="btn-icon" aria-label="Layout bearbeiten">
+                    <span class="material-symbols-outlined">edit</span>
+                </button>
                 <div class="avatar" aria-label="Benutzerprofil"></div>
             </header>
 
@@ -31,145 +34,10 @@
                     <input type="search" id="global-search" placeholder="Suchen (alles)..." aria-label="Globale Suche">
                 </div>
 
-                <!-- Quicklinks -->
-                <section class="quicklinks-section" aria-label="Quicklinks">
-                    <div class="section-header">
-                        <h2 class="section-title">
-                            <span class="material-symbols-outlined">bookmark</span>
-                            Quicklinks
-                        </h2>
-                        <button class="btn-text">Bearbeiten</button>
-                    </div>
-                    <div class="quicklinks-grid">
-                        <a href="#" class="quicklink-item">
-                            <div class="quicklink-icon ql-blue"><span class="material-symbols-outlined">edit_note</span></div>
-                            <span class="quicklink-label">Notizen</span>
-                        </a>
-                        <a href="#" class="quicklink-item">
-                            <div class="quicklink-icon ql-red"><span class="material-symbols-outlined">calendar_month</span></div>
-                            <span class="quicklink-label">Kalender</span>
-                        </a>
-                        <a href="#" class="quicklink-item">
-                            <div class="quicklink-icon ql-amber"><span class="material-symbols-outlined">inventory_2</span></div>
-                            <span class="quicklink-label">Pakete</span>
-                        </a>
-                        <a href="#" class="quicklink-item">
-                            <div class="quicklink-icon ql-green"><span class="material-symbols-outlined">cloud</span></div>
-                            <span class="quicklink-label">Drive</span>
-                        </a>
-                        <a href="#" class="quicklink-item">
-                            <div class="quicklink-icon ql-purple"><span class="material-symbols-outlined">monitoring</span></div>
-                            <span class="quicklink-label">Kosten</span>
-                        </a>
-                        <a href="#" class="quicklink-item">
-                            <div class="quicklink-icon ql-teal"><span class="material-symbols-outlined">link</span></div>
-                            <span class="quicklink-label">Links</span>
-                        </a>
-                    </div>
-                </section>
-
-                <!-- Weather Widget -->
-                <section class="widget widget-weather" aria-label="Wetter">
-                    <div class="weather-top">
-                        <span class="weather-location">Dresden, DE</span>
-                        <button class="btn-icon-sm" aria-label="Wetter aktualisieren">
-                            <span class="material-symbols-outlined">refresh</span>
-                        </button>
-                    </div>
-                    <div class="weather-main">
-                        <div class="weather-info">
-                            <div class="weather-temp-row">
-                                <span class="weather-temp">18°</span>
-                                <span class="weather-desc">Sonnig</span>
-                            </div>
-                            <span class="weather-range">↑ 21° ↓ 12°</span>
-                        </div>
-                        <div class="weather-icon-container" aria-label="Wetter-Icon Platzhalter">
-                            <!-- Bild-Platzhalter -->
-                        </div>
-                    </div>
-                    <div class="weather-forecast">
-                        <div class="forecast-day">
-                            <span class="forecast-name">Mi</span>
-                            <div class="forecast-icon-placeholder"></div>
-                            <span class="forecast-temps">21°/12°</span>
-                        </div>
-                        <div class="forecast-day">
-                            <span class="forecast-name">Do</span>
-                            <div class="forecast-icon-placeholder"></div>
-                            <span class="forecast-temps">23°/13°</span>
-                        </div>
-                        <div class="forecast-day">
-                            <span class="forecast-name">Fr</span>
-                            <div class="forecast-icon-placeholder"></div>
-                            <span class="forecast-temps">22°/14°</span>
-                        </div>
-                        <div class="forecast-day">
-                            <span class="forecast-name">Sa</span>
-                            <div class="forecast-icon-placeholder"></div>
-                            <span class="forecast-temps">20°/11°</span>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- DHL Tracking Widget -->
-                <section class="widget widget-dhl" aria-label="DHL Paket-Tracking">
-                    <div class="widget-header">
-                        <div class="widget-header-left">
-                            <div class="widget-icon icon-amber">
-                                <span class="material-symbols-outlined">local_shipping</span>
-                            </div>
-                            <h2 class="widget-title">Paket Tracking (DHL)</h2>
-                        </div>
-                        <button class="btn-icon-sm" aria-label="Mehr Optionen">
-                            <span class="material-symbols-outlined">more_vert</span>
-                        </button>
-                    </div>
-                    <div class="dhl-content">
-                        <div class="dhl-status-row">
-                            <span class="status-badge badge-green">In Zustellung</span>
-                            <span class="dhl-count">1 von 2 Paketen</span>
-                        </div>
-                        <p class="dhl-item-name">Nike Air Max – Bestellung #12345</p>
-                        <div class="dhl-delivery-row">
-                            <span class="material-symbols-outlined">schedule</span>
-                            <span>Heute, 14:00 – 18:00 Uhr</span>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: 65%"></div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- AI Trends RSS Widget -->
-                <section class="widget widget-rss" aria-label="AI Trends RSS">
-                    <div class="widget-header">
-                        <div class="widget-header-left">
-                            <div class="widget-icon icon-purple">
-                                <span class="material-symbols-outlined">rss_feed</span>
-                            </div>
-                            <h2 class="widget-title">AI Trends (RSS)</h2>
-                        </div>
-                    </div>
-                    <ul class="rss-list">
-                        <li class="rss-item">
-                            <span class="rss-dot"></span>
-                            <span class="rss-text">OpenAI veröffentlicht neue Tools für Entwickler</span>
-                            <span class="rss-time">vor 2h</span>
-                        </li>
-                        <li class="rss-item">
-                            <span class="rss-dot"></span>
-                            <span class="rss-text">Google I/O 2025 – Alle wichtigen AI Updates</span>
-                            <span class="rss-time">vor 5h</span>
-                        </li>
-                        <li class="rss-item">
-                            <span class="rss-dot"></span>
-                            <span class="rss-text">Anthropic verbessert Claude Memory</span>
-                            <span class="rss-time">vor 8h</span>
-                        </li>
-                    </ul>
-                    <button class="btn-text rss-more">Mehr anzeigen</button>
-                </section>
+                <!-- Dashboard Widget Grid -->
+                <div id="dashboard-grid">
+                    <!-- Dynamic widgets will be rendered here -->
+                </div>
             </div>
         </div>
 
@@ -467,6 +335,399 @@
             </button>
         </nav>
     </div>
+
+    <!-- ========== DIALOG: ADD WIDGET ========== -->
+    <dialog id="add-widget-dialog" class="widget-dialog">
+        <div class="dialog-header">
+            <h3>Widget hinzufügen</h3>
+            <button id="close-dialog-btn" class="btn-icon-sm" aria-label="Schließen">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <div class="dialog-body">
+            <div class="widget-options-grid">
+                <button class="widget-option-item" data-widget-type="quicklinks">
+                    <span class="material-symbols-outlined ql-blue-icon">bookmark</span>
+                    <span>Quicklinks</span>
+                </button>
+                <button class="widget-option-item" data-widget-type="weather">
+                    <span class="material-symbols-outlined ql-blue-icon">cloud</span>
+                    <span>Wetter</span>
+                </button>
+                <button class="widget-option-item" data-widget-type="dhl">
+                    <span class="material-symbols-outlined ql-amber-icon">local_shipping</span>
+                    <span>DHL Tracking</span>
+                </button>
+                <button class="widget-option-item" data-widget-type="rss">
+                    <span class="material-symbols-outlined ql-purple-icon">rss_feed</span>
+                    <span>AI Trends (RSS)</span>
+                </button>
+                <button class="widget-option-item" data-widget-type="notes">
+                    <span class="material-symbols-outlined ql-purple-icon">description</span>
+                    <span>Notizen</span>
+                </button>
+                <button class="widget-option-item" data-widget-type="integrations">
+                    <span class="material-symbols-outlined ql-blue-icon">event</span>
+                    <span>Integrationen</span>
+                </button>
+                <button class="widget-option-item" data-widget-type="drive">
+                    <span class="material-symbols-outlined ql-amber-icon">folder</span>
+                    <span>Google Drive</span>
+                </button>
+                <button class="widget-option-item" data-widget-type="costs">
+                    <span class="material-symbols-outlined ql-blue-icon">monitoring</span>
+                    <span>API Kosten</span>
+                </button>
+                <button class="widget-option-item" data-widget-type="webhook">
+                    <span class="material-symbols-outlined ql-purple-icon">link</span>
+                    <span>Webhook</span>
+                </button>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- ========== TEMPLATES: WIDGETS ========== -->
+    
+    <!-- Quicklinks -->
+    <template id="template-quicklinks">
+        <div class="widget-wrapper" data-widget-id="quicklinks">
+            <div class="widget-controls">
+                <button class="widget-control-btn drag-handle" aria-label="Widget verschieben">
+                    <span class="material-symbols-outlined">drag_indicator</span>
+                </button>
+                <button class="widget-control-btn delete-btn" aria-label="Widget löschen">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <section class="quicklinks-section" aria-label="Quicklinks">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <span class="material-symbols-outlined">bookmark</span>
+                        Quicklinks
+                    </h2>
+                </div>
+                <div class="quicklinks-grid">
+                    <a href="#" class="quicklink-item">
+                        <div class="quicklink-icon ql-blue"><span class="material-symbols-outlined">edit_note</span></div>
+                        <span class="quicklink-label">Notizen</span>
+                    </a>
+                    <a href="#" class="quicklink-item">
+                        <div class="quicklink-icon ql-red"><span class="material-symbols-outlined">calendar_month</span></div>
+                        <span class="quicklink-label">Kalender</span>
+                    </a>
+                    <a href="#" class="quicklink-item">
+                        <div class="quicklink-icon ql-amber"><span class="material-symbols-outlined">inventory_2</span></div>
+                        <span class="quicklink-label">Pakete</span>
+                    </a>
+                    <a href="#" class="quicklink-item">
+                        <div class="quicklink-icon ql-green"><span class="material-symbols-outlined">cloud</span></div>
+                        <span class="quicklink-label">Drive</span>
+                    </a>
+                    <a href="#" class="quicklink-item">
+                        <div class="quicklink-icon ql-purple"><span class="material-symbols-outlined">monitoring</span></div>
+                        <span class="quicklink-label">Kosten</span>
+                    </a>
+                    <a href="#" class="quicklink-item">
+                        <div class="quicklink-icon ql-teal"><span class="material-symbols-outlined">link</span></div>
+                        <span class="quicklink-label">Links</span>
+                    </a>
+                </div>
+            </section>
+        </div>
+    </template>
+
+    <!-- Wetter -->
+    <template id="template-weather">
+        <div class="widget-wrapper" data-widget-id="weather">
+            <div class="widget-controls">
+                <button class="widget-control-btn drag-handle" aria-label="Widget verschieben">
+                    <span class="material-symbols-outlined">drag_indicator</span>
+                </button>
+                <button class="widget-control-btn delete-btn" aria-label="Widget löschen">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <section class="widget widget-weather" aria-label="Wetter">
+                <div class="weather-top">
+                    <span class="weather-location">Dresden, DE</span>
+                    <button class="btn-icon-sm" aria-label="Wetter aktualisieren">
+                        <span class="material-symbols-outlined">refresh</span>
+                    </button>
+                </div>
+                <div class="weather-main">
+                    <div class="weather-info">
+                        <div class="weather-temp-row">
+                            <span class="weather-temp">18°</span>
+                            <span class="weather-desc">Sonnig</span>
+                        </div>
+                        <span class="weather-range">↑ 21° ↓ 12°</span>
+                    </div>
+                    <div class="weather-icon-container" aria-label="Wetter-Icon Platzhalter"></div>
+                </div>
+                <div class="weather-forecast">
+                    <div class="forecast-day">
+                        <span class="forecast-name">Mi</span>
+                        <div class="forecast-icon-placeholder"></div>
+                        <span class="forecast-temps">21°/12°</span>
+                    </div>
+                    <div class="forecast-day">
+                        <span class="forecast-name">Do</span>
+                        <div class="forecast-icon-placeholder"></div>
+                        <span class="forecast-temps">23°/13°</span>
+                    </div>
+                    <div class="forecast-day">
+                        <span class="forecast-name">Fr</span>
+                        <div class="forecast-icon-placeholder"></div>
+                        <span class="forecast-temps">22°/14°</span>
+                    </div>
+                    <div class="forecast-day">
+                        <span class="forecast-name">Sa</span>
+                        <div class="forecast-icon-placeholder"></div>
+                        <span class="forecast-temps">20°/11°</span>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </template>
+
+    <!-- DHL -->
+    <template id="template-dhl">
+        <div class="widget-wrapper" data-widget-id="dhl">
+            <div class="widget-controls">
+                <button class="widget-control-btn drag-handle" aria-label="Widget verschieben">
+                    <span class="material-symbols-outlined">drag_indicator</span>
+                </button>
+                <button class="widget-control-btn delete-btn" aria-label="Widget löschen">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <section class="widget widget-dhl" aria-label="DHL Paket-Tracking">
+                <div class="widget-header">
+                    <div class="widget-header-left">
+                        <div class="widget-icon icon-amber">
+                            <span class="material-symbols-outlined">local_shipping</span>
+                        </div>
+                        <h2 class="widget-title">Paket Tracking (DHL)</h2>
+                    </div>
+                    <button class="btn-icon-sm" aria-label="Mehr Optionen">
+                        <span class="material-symbols-outlined">more_vert</span>
+                    </button>
+                </div>
+                <div class="dhl-content">
+                    <div class="dhl-status-row">
+                        <span class="status-badge badge-green">In Zustellung</span>
+                        <span class="dhl-count">1 von 2 Paketen</span>
+                    </div>
+                    <p class="dhl-item-name">Nike Air Max – Bestellung #12345</p>
+                    <div class="dhl-delivery-row">
+                        <span class="material-symbols-outlined">schedule</span>
+                        <span>Heute, 14:00 – 18:00 Uhr</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 65%"></div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </template>
+
+    <!-- RSS -->
+    <template id="template-rss">
+        <div class="widget-wrapper" data-widget-id="rss">
+            <div class="widget-controls">
+                <button class="widget-control-btn drag-handle" aria-label="Widget verschieben">
+                    <span class="material-symbols-outlined">drag_indicator</span>
+                </button>
+                <button class="widget-control-btn delete-btn" aria-label="Widget löschen">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <section class="widget widget-rss" aria-label="AI Trends RSS">
+                <div class="widget-header">
+                    <div class="widget-header-left">
+                        <div class="widget-icon icon-purple">
+                            <span class="material-symbols-outlined">rss_feed</span>
+                        </div>
+                        <h2 class="widget-title">AI Trends (RSS)</h2>
+                    </div>
+                </div>
+                <ul class="rss-list">
+                    <li class="rss-item">
+                        <span class="rss-dot"></span>
+                        <span class="rss-text">OpenAI veröffentlicht neue Tools für Entwickler</span>
+                        <span class="rss-time">vor 2h</span>
+                    </li>
+                    <li class="rss-item">
+                        <span class="rss-dot"></span>
+                        <span class="rss-text">Google I/O 2025 – Alle wichtigen AI Updates</span>
+                        <span class="rss-time">vor 5h</span>
+                    </li>
+                    <li class="rss-item">
+                        <span class="rss-dot"></span>
+                        <span class="rss-text">Anthropic verbessert Claude Memory</span>
+                        <span class="rss-time">vor 8h</span>
+                    </li>
+                </ul>
+                <button class="btn-text rss-more">Mehr anzeigen</button>
+            </section>
+        </div>
+    </template>
+
+    <!-- Notizen -->
+    <template id="template-notes">
+        <div class="widget-wrapper" data-widget-id="notes">
+            <div class="widget-controls">
+                <button class="widget-control-btn drag-handle" aria-label="Widget verschieben">
+                    <span class="material-symbols-outlined">drag_indicator</span>
+                </button>
+                <button class="widget-control-btn delete-btn" aria-label="Widget löschen">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <section class="widget widget-notes" aria-label="Notizen">
+                <div class="widget-header">
+                    <div class="widget-header-left">
+                        <div class="widget-icon icon-purple"><span class="material-symbols-outlined">description</span></div>
+                        <h2 class="widget-title">Notizen</h2>
+                    </div>
+                </div>
+                <div class="notes-list">
+                    <div class="note-item">
+                        <div class="note-icon"><span class="material-symbols-outlined">description</span></div>
+                        <div class="note-content">
+                            <span class="note-title">Ideen für Sommerurlaub 2025</span>
+                            <span class="note-date">10.06.2025</span>
+                        </div>
+                    </div>
+                    <div class="note-item">
+                        <div class="note-icon"><span class="material-symbols-outlined">checklist</span></div>
+                        <div class="note-content">
+                            <span class="note-title">Checkliste Steuererklärung</span>
+                            <span class="note-date">09.06.2025</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </template>
+
+    <!-- Integrationen -->
+    <template id="template-integrations">
+        <div class="widget-wrapper" data-widget-id="integrations">
+            <div class="widget-controls">
+                <button class="widget-control-btn drag-handle" aria-label="Widget verschieben">
+                    <span class="material-symbols-outlined">drag_indicator</span>
+                </button>
+                <button class="widget-control-btn delete-btn" aria-label="Widget löschen">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <section class="widget widget-integrations" aria-label="Kalender Integrationen">
+                <div class="widget-header">
+                    <div class="widget-header-left">
+                        <div class="widget-icon icon-google"><span class="material-symbols-outlined">event</span></div>
+                        <h2 class="widget-title">Kalender Integrationen</h2>
+                    </div>
+                </div>
+                <div class="integration-list">
+                    <div class="integration-item">
+                        <div class="integration-icon icon-google"><span class="material-symbols-outlined">event</span></div>
+                        <span class="integration-name">Google Calendar</span>
+                        <span class="status-badge badge-green-sm">Verbunden</span>
+                    </div>
+                    <div class="integration-item">
+                        <div class="integration-icon icon-apple"><span class="material-symbols-outlined">smartphone</span></div>
+                        <span class="integration-name">iCal (Apple)</span>
+                        <span class="status-badge badge-green-sm">Verbunden</span>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </template>
+
+    <!-- Google Drive -->
+    <template id="template-drive">
+        <div class="widget-wrapper" data-widget-id="drive">
+            <div class="widget-controls">
+                <button class="widget-control-btn drag-handle" aria-label="Widget verschieben">
+                    <span class="material-symbols-outlined">drag_indicator</span>
+                </button>
+                <button class="widget-control-btn delete-btn" aria-label="Widget löschen">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <section class="widget widget-drive" aria-label="Drive Integration">
+                <div class="widget-header">
+                    <div class="widget-header-left">
+                        <div class="widget-icon icon-amber"><span class="material-symbols-outlined">folder</span></div>
+                        <h2 class="widget-title">Drive Integration</h2>
+                    </div>
+                </div>
+                <div class="drive-content">
+                    <div class="drive-status-row">
+                        <div class="drive-icon"><span class="material-symbols-outlined">folder</span></div>
+                        <span class="drive-desc">Dateien automatisch organisieren</span>
+                        <span class="status-badge badge-green-sm">Aktiv</span>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </template>
+
+    <!-- Costs -->
+    <template id="template-costs">
+        <div class="widget-wrapper" data-widget-id="costs">
+            <div class="widget-controls">
+                <button class="widget-control-btn drag-handle" aria-label="Widget verschieben">
+                    <span class="material-symbols-outlined">drag_indicator</span>
+                </button>
+                <button class="widget-control-btn delete-btn" aria-label="Widget löschen">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <section class="widget widget-costs" aria-label="Google API Kosten">
+                <div class="widget-header">
+                    <div class="widget-header-left">
+                        <div class="widget-icon icon-google"><span class="material-symbols-outlined">monitoring</span></div>
+                        <h2 class="widget-title">Google API Kosten</h2>
+                    </div>
+                </div>
+                <div class="costs-content">
+                    <div class="costs-main-row">
+                        <span class="costs-amount">2,48 €</span>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </template>
+
+    <!-- Webhook -->
+    <template id="template-webhook">
+        <div class="widget-wrapper" data-widget-id="webhook">
+            <div class="widget-controls">
+                <button class="widget-control-btn drag-handle" aria-label="Widget verschieben">
+                    <span class="material-symbols-outlined">drag_indicator</span>
+                </button>
+                <button class="widget-control-btn delete-btn" aria-label="Widget löschen">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <section class="widget widget-webhook" aria-label="Webhook">
+                <div class="widget-header">
+                    <div class="widget-header-left">
+                        <div class="widget-icon icon-purple"><span class="material-symbols-outlined">link</span></div>
+                        <h2 class="widget-title">Webhook</h2>
+                    </div>
+                </div>
+                <div class="webhook-content">
+                    <div class="webhook-url-row">
+                        <code class="webhook-url">https://mein-orga-hub.de/webhook/generic</code>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </template>
+
     <script src="./src/main.js"></script>
 </body>
 </html>
