@@ -42,6 +42,10 @@ function initWidgets() {
     // Load initial layout
     loadLayout(container);
 
+    // Guard to prevent double event listener registration
+    if (container.dataset.eventsBound) return;
+    container.dataset.eventsBound = "true";
+
     // Setup Edit Mode
     initEditMode(container);
 
