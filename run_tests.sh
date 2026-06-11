@@ -3,4 +3,4 @@
 # Runs the vitest unit tests.
 
 echo "Running Nexus HQ Unit Tests..."
-npm run test
+npm run test -- --no-cache
