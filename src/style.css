@@ -260,7 +260,7 @@ input {
 }
 .search-bar input {
     flex: 1;
-    font-size: 14px;
+    font-size: 16px;
     color: var(--text-primary);
 }
 .search-bar input::placeholder {
@@ -1435,7 +1435,7 @@ input {
     border-radius: var(--radius-md);
     padding: 12px var(--space-md);
     color: #ffffff;
-    font-size: 14px;
+    font-size: 16px;
     transition: all var(--transition-fast);
     width: 100%;
 }
