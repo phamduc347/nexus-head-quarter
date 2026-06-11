@@ -14,8 +14,68 @@
 <body>
     <div id="app">
 
+        <!-- ========== SCREEN: AUTHENTICATION ========== -->
+        <div class="screen active" id="screen-auth">
+            <div class="auth-container">
+                <!-- Splash / Loading state -->
+                <div id="auth-loading" class="auth-card hidden">
+                    <div class="spinner"></div>
+                    <p>Verbindung zu Nexus HQ wird hergestellt...</p>
+                </div>
+
+                <!-- Setup Supabase (if keys missing) -->
+                <div id="auth-setup" class="auth-card hidden">
+                    <h2 class="auth-title">Supabase Verbindung</h2>
+                    <p class="auth-subtitle">Gib deine Supabase-Projekt-Daten ein, um deine Daten in der Cloud zu sichern.</p>
+                    <form id="setup-form">
+                        <div class="form-group">
+                            <label for="setup-url">Supabase URL</label>
+                            <input type="url" id="setup-url" placeholder="https://your-project.supabase.co" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="setup-key">Supabase Anon Key</label>
+                            <input type="password" id="setup-key" placeholder="eyJhbGciOiJIUzI1Ni..." required>
+                        </div>
+                        <button type="submit" class="btn-primary">Verbindung speichern</button>
+                    </form>
+                </div>
+
+                <!-- Login / Register Form -->
+                <div id="auth-login" class="auth-card">
+                    <h2 class="auth-title">Pham's Nexus Hub</h2>
+                    <p class="auth-subtitle">Melde dich an, um auf dein Dashboard zuzugreifen.</p>
+                    
+                    <div class="auth-tabs">
+                        <button class="auth-tab active" id="tab-login" type="button">Anmelden</button>
+                        <button class="auth-tab" id="tab-register" type="button">Registrieren</button>
+                    </div>
+
+                    <form id="login-form">
+                        <div class="form-group">
+                            <label for="login-email">E-Mail Adresse</label>
+                            <input type="email" id="login-email" placeholder="name@domain.com" required autocomplete="username">
+                        </div>
+                        <div class="form-group">
+                            <label for="login-password">Passwort</label>
+                            <input type="password" id="login-password" placeholder="••••••••" required autocomplete="current-password">
+                        </div>
+                        <div class="form-group hidden" id="register-confirm-group">
+                            <label for="login-confirm-password">Passwort bestätigen</label>
+                            <input type="password" id="login-confirm-password" placeholder="••••••••" autocomplete="new-password">
+                        </div>
+                        <div class="auth-error-message hidden" id="auth-error"></div>
+                        <button type="submit" class="btn-primary" id="auth-submit-btn">Anmelden</button>
+                    </form>
+                    
+                    <div class="auth-footer">
+                        <button type="button" id="btn-show-setup" class="btn-text">Verbindungseinstellungen bearbeiten</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- ========== SCREEN: HOME ========== -->
-        <div class="screen active" id="screen-home">
+        <div class="screen" id="screen-home">
             <header class="app-header">
                 <button class="btn-icon" aria-label="Menü öffnen">
                     <span class="material-symbols-outlined">menu</span>
@@ -218,6 +278,29 @@
             </header>
 
             <div class="screen-content">
+                <!-- Account Section -->
+                <section class="widget widget-account" aria-label="Benutzerkonto">
+                    <div class="widget-header">
+                        <h2 class="widget-title">Dein Konto</h2>
+                    </div>
+                    <div class="account-content">
+                        <div class="account-info-row">
+                            <span class="material-symbols-outlined account-icon">account_circle</span>
+                            <div class="account-details">
+                                <span class="account-email" id="settings-user-email">email@example.com</span>
+                                <span class="account-status">Mit Supabase verbunden</span>
+                            </div>
+                        </div>
+                        <div class="account-actions">
+                            <button id="logout-btn" class="btn-secondary" type="button">
+                                <span class="material-symbols-outlined">logout</span>
+                                <span>Abmelden</span>
+                            </button>
+                            <button id="reset-setup-btn" class="btn-text-danger" type="button">Verbindung trennen</button>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- Calendar Integrations -->
                 <section class="widget widget-integrations" aria-label="Kalender Integrationen">
                     <div class="widget-header">
@@ -728,6 +811,19 @@
         </div>
     </template>
 
+    <script>
+        // Injected by Vite during dev/build. Fallback if opened directly via file://
+        const urlEnv = "%VITE_SUPABASE_URL%";
+        const keyEnv = "%VITE_SUPABASE_ANON_KEY%";
+        if (urlEnv && urlEnv !== "%" + "VITE_SUPABASE_URL" + "%") {
+            window.NEXUS_SUPABASE_URL = urlEnv;
+        }
+        if (keyEnv && keyEnv !== "%" + "VITE_SUPABASE_ANON_KEY" + "%") {
+            window.NEXUS_SUPABASE_ANON_KEY = keyEnv;
+        }
+    </script>
+    <script src="./config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="./src/main.js"></script>
 </body>
 </html>

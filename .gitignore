@@ -25,3 +25,4 @@ Thumbs.db
 # Secrets / Keys — niemals committen!
 *.pem
 service-account*.json
+config.js

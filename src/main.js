@@ -3,10 +3,6 @@
  * Handles screen navigation, widget rendering, dragging, and dynamic updates.
  */
 
-document.addEventListener('DOMContentLoaded', () => {
-    initNavigation();
-    initWidgets();
-});
 
 /**
  * Bottom navigation — switch between screens
@@ -60,22 +56,45 @@ function initWidgets() {
 }
 
 /**
- * Loads layout state from localStorage or sets defaults
+ * Loads layout state from Supabase database or localStorage fallback
  */
-function loadLayout(container) {
-    let layout;
-    try {
-        layout = JSON.parse(localStorage.getItem('nexus-dashboard-layout'));
-    } catch (e) {
-        layout = null;
+async function loadLayout(container) {
+    container.innerHTML = '';
+
+    let layout = null;
+    const client = getSupabaseClient();
+    
+    if (client && currentUser) {
+        try {
+            const { data, error } = await client
+                .from('widget_layout')
+                .select('widget_id')
+                .eq('user_id', currentUser.id)
+                .order('position_y', { ascending: true });
+
+            if (error) throw error;
+
+            if (data && data.length > 0) {
+                layout = data.map(row => row.widget_id);
+            }
+        } catch (e) {
+            console.error('Failed to load layout from Supabase, falling back to localStorage', e);
+        }
+    }
+
+    // Fallback to localStorage
+    if (!layout) {
+        try {
+            layout = JSON.parse(localStorage.getItem('nexus-dashboard-layout'));
+        } catch (e) {
+            layout = null;
+        }
     }
 
     // Default widgets if none saved
     if (!layout || !Array.isArray(layout)) {
         layout = ['quicklinks', 'weather', 'dhl', 'rss'];
     }
-
-    container.innerHTML = '';
 
     layout.forEach(type => {
         const template = document.getElementById(`template-${type}`);
@@ -90,16 +109,58 @@ function loadLayout(container) {
 }
 
 /**
- * Persists current widget layout order in localStorage
+ * Persists current widget layout order in Supabase and localStorage
  */
-function saveLayout() {
+async function saveLayout() {
     const container = document.getElementById('dashboard-grid');
     if (!container) return;
 
     const wrappers = container.querySelectorAll('.widget-wrapper');
     const layout = Array.from(wrappers).map(w => w.dataset.widgetId);
     
+    // Local backup
     localStorage.setItem('nexus-dashboard-layout', JSON.stringify(layout));
+
+    const client = getSupabaseClient();
+    if (client && currentUser) {
+        try {
+            // Delete widgets that are no longer in our list
+            if (layout.length > 0) {
+                await client
+                    .from('widget_layout')
+                    .delete()
+                    .eq('user_id', currentUser.id)
+                    .not('widget_id', 'in', `(${layout.join(',')})`);
+            } else {
+                await client
+                    .from('widget_layout')
+                    .delete()
+                    .eq('user_id', currentUser.id);
+            }
+
+            // Prep upsert rows
+            const rows = layout.map((type, idx) => ({
+                user_id: currentUser.id,
+                widget_id: type,
+                title: type.charAt(0).toUpperCase() + type.slice(1),
+                position_y: idx,
+                position_x: 0,
+                col_span: 1,
+                row_span: 1,
+                is_visible: true,
+                updated_at: new Date().toISOString()
+            }));
+
+            if (rows.length > 0) {
+                const { error } = await client
+                    .from('widget_layout')
+                    .upsert(rows, { onConflict: 'user_id,widget_id' });
+                if (error) throw error;
+            }
+        } catch (e) {
+            console.error('Failed to save layout to Supabase', e);
+        }
+    }
 }
 
 /**
@@ -300,4 +361,318 @@ if (typeof window !== 'undefined') {
     window.loadLayout = loadLayout;
     window.saveLayout = saveLayout;
     window.addWidget = addWidget;
+    window.initAuth = initAuth;
+    window.getSupabaseClient = getSupabaseClient;
+    window.getSupabaseCredentials = getSupabaseCredentials;
+    window.handleAuthStateChange = handleAuthStateChange;
+}
+
+// ========== AUTHENTICATION LOGIC ==========
+
+let supabaseClient = null;
+let currentUser = null;
+
+function getSupabaseCredentials() {
+    const url = window.NEXUS_SUPABASE_URL || window.VITE_SUPABASE_URL;
+    const key = window.NEXUS_SUPABASE_ANON_KEY || window.VITE_SUPABASE_ANON_KEY;
+    if (url && key) {
+        return { url, key };
+    }
+    const savedUrl = localStorage.getItem('nexus-supabase-url');
+    const savedKey = localStorage.getItem('nexus-supabase-key');
+    if (savedUrl && savedKey) {
+        return { url: savedUrl, key: savedKey };
+    }
+    return null;
+}
+
+function getSupabaseClient() {
+    if (supabaseClient) return supabaseClient;
+    const credentials = getSupabaseCredentials();
+    if (!credentials) return null;
+    if (typeof window !== 'undefined' && window.supabase) {
+        try {
+            supabaseClient = window.supabase.createClient(credentials.url, credentials.key);
+            return supabaseClient;
+        } catch (e) {
+            console.error('Failed to create Supabase client', e);
+        }
+    }
+    return null;
+}
+
+async function initAuth() {
+    // Bind form events regardless of credentials state
+    setupAuthUIEvents();
+
+    const client = getSupabaseClient();
+
+    if (!client) {
+        // Show setup screen if keys are missing (hides the default-visible login form)
+        showAuthCard('auth-setup');
+        document.body.classList.add('auth-locked');
+        return;
+    }
+
+    // We have credentials — show loading spinner while checking session
+    showAuthCard('auth-loading');
+    document.body.classList.add('auth-locked');
+
+    // Add a connection timeout (4 seconds) to fall back if the query hangs
+    let authLoaded = false;
+    const timeoutId = setTimeout(() => {
+        if (!authLoaded) {
+            console.warn('Supabase session load timed out.');
+            showAuthCard('auth-login');
+            showAuthError('Die Verbindung dauert ungewöhnlich lange. Überprüfe ggf. deine Zugangsdaten.');
+        }
+    }, 4000);
+
+    try {
+        // Explicitly check current session to transition out of loading state
+        const { data, error } = await client.auth.getSession();
+        if (error) throw error;
+        
+        authLoaded = true;
+        clearTimeout(timeoutId);
+        
+        handleAuthStateChange('INITIAL', data ? data.session : null);
+
+        // Listen to subsequent Auth state changes
+        client.auth.onAuthStateChange((event, session) => {
+            handleAuthStateChange(event, session);
+        });
+    } catch (e) {
+        authLoaded = true;
+        clearTimeout(timeoutId);
+        console.error('Failed to query Supabase session status', e);
+        showAuthCard('auth-login');
+        showAuthError('Verbindung zum Server konnte nicht hergestellt werden. Bitte Verbindungseinstellungen prüfen.');
+    }
+}
+
+function showAuthCard(cardId) {
+    const cards = ['auth-loading', 'auth-setup', 'auth-login'];
+    cards.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            if (id === cardId) {
+                el.classList.remove('hidden');
+            } else {
+                el.classList.add('hidden');
+            }
+        }
+    });
+}
+
+function handleAuthStateChange(event, session) {
+    const emailEl = document.getElementById('settings-user-email');
+    currentUser = session ? session.user : null;
+    
+    if (session) {
+        // User is logged in
+        document.body.classList.remove('auth-locked');
+        if (emailEl) emailEl.textContent = session.user.email;
+        
+        // Show home screen by default if we were locked
+        const activeScreen = document.querySelector('.screen.active');
+        if (!activeScreen || activeScreen.id === 'screen-auth') {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            const home = document.getElementById('screen-home');
+            if (home) home.classList.add('active');
+            
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            const homeNav = document.querySelector('.nav-item[data-screen="screen-home"]');
+            if (homeNav) homeNav.classList.add('active');
+        }
+
+        // Initialize widgets for user
+        initWidgets();
+    } else {
+        // User is logged out
+        document.body.classList.add('auth-locked');
+        
+        // Deactivate all screens and activate auth screen
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        const authScreen = document.getElementById('screen-auth');
+        if (authScreen) authScreen.classList.add('active');
+
+        showAuthCard('auth-login');
+        if (emailEl) emailEl.textContent = '';
+        
+        // Clear layout container to prevent residual visual data
+        const grid = document.getElementById('dashboard-grid');
+        if (grid) grid.innerHTML = '';
+    }
+}
+
+function setupAuthUIEvents() {
+    // 1. Setup credential storage form
+    const setupForm = document.getElementById('setup-form');
+    if (setupForm) {
+        setupForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const url = document.getElementById('setup-url').value.trim();
+            const key = document.getElementById('setup-key').value.trim();
+            if (url && key) {
+                localStorage.setItem('nexus-supabase-url', url);
+                localStorage.setItem('nexus-supabase-key', key);
+                // Clear any cached client and reload auth
+                supabaseClient = null;
+                initAuth();
+            }
+        });
+    }
+
+    // 2. Setup Login / Register Tab Toggles
+    const tabLogin = document.getElementById('tab-login');
+    const tabRegister = document.getElementById('tab-register');
+    const authSubmitBtn = document.getElementById('auth-submit-btn');
+    const authTitle = document.querySelector('#auth-login .auth-title');
+    const authSubtitle = document.querySelector('#auth-login .auth-subtitle');
+    const confirmGroup = document.getElementById('register-confirm-group');
+    const confirmInput = document.getElementById('login-confirm-password');
+    const passwordInput = document.getElementById('login-password');
+    let isRegisterMode = false;
+
+    if (tabLogin && tabRegister) {
+        tabLogin.addEventListener('click', () => {
+            tabLogin.classList.add('active');
+            tabRegister.classList.remove('active');
+            authSubmitBtn.textContent = 'Anmelden';
+            authTitle.textContent = 'Pham\'s Nexus Hub';
+            authSubtitle.textContent = 'Melde dich an, um auf dein Dashboard zuzugreifen.';
+            isRegisterMode = false;
+            if (confirmGroup) confirmGroup.classList.add('hidden');
+            if (confirmInput) confirmInput.removeAttribute('required');
+            if (passwordInput) passwordInput.setAttribute('autocomplete', 'current-password');
+            hideAuthError();
+        });
+
+        tabRegister.addEventListener('click', () => {
+            tabRegister.classList.add('active');
+            tabLogin.classList.remove('active');
+            authSubmitBtn.textContent = 'Registrieren';
+            authTitle.textContent = 'Konto erstellen';
+            authSubtitle.textContent = 'Erstelle ein Konto, um deine Daten in der Cloud zu sichern.';
+            isRegisterMode = true;
+            if (confirmGroup) confirmGroup.classList.remove('hidden');
+            if (confirmInput) confirmInput.setAttribute('required', 'required');
+            if (passwordInput) passwordInput.setAttribute('autocomplete', 'new-password');
+            hideAuthError();
+        });
+    }
+
+    // 3. Setup Login / Register submission
+    const loginForm = document.getElementById('login-form');
+    if (loginForm) {
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value.trim();
+            const password = passwordInput ? passwordInput.value : '';
+            const client = getSupabaseClient();
+
+            if (!client) {
+                showAuthError('Supabase Client nicht initialisiert.');
+                return;
+            }
+
+            if (isRegisterMode) {
+                const confirmPassword = confirmInput ? confirmInput.value : '';
+                if (password !== confirmPassword) {
+                    showAuthError('Passwörter stimmen nicht überein.');
+                    return;
+                }
+            }
+
+            setSubmitLoading(true);
+            hideAuthError();
+
+            try {
+                if (isRegisterMode) {
+                    const { data, error } = await client.auth.signUp({ email, password });
+                    if (error) throw error;
+                    alert('Registrierung erfolgreich! Falls E-Mail-Bestätigung aktiviert ist, prüfe deinen Posteingang. Du wirst jetzt angemeldet.');
+                } else {
+                    const { data, error } = await client.auth.signInWithPassword({ email, password });
+                    if (error) throw error;
+                }
+            } catch (err) {
+                showAuthError(err.message || 'Authentifizierungsfehler');
+            } finally {
+                setSubmitLoading(false);
+            }
+        });
+    }
+
+    // 4. Setup Show Setup Settings button
+    const showSetupBtn = document.getElementById('btn-show-setup');
+    if (showSetupBtn) {
+        showSetupBtn.addEventListener('click', () => {
+            showAuthCard('auth-setup');
+        });
+    }
+
+    // 5. Setup Sign out and Connection Reset
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', async () => {
+            const client = getSupabaseClient();
+            if (client) {
+                await client.auth.signOut();
+            }
+        });
+    }
+
+    const resetSetupBtn = document.getElementById('reset-setup-btn');
+    if (resetSetupBtn) {
+        resetSetupBtn.addEventListener('click', async () => {
+            if (confirm('Möchtest du die Supabase-Verbindung wirklich trennen? Du wirst abgemeldet und die Verbindungsdaten werden gelöscht.')) {
+                const client = getSupabaseClient();
+                if (client) {
+                    await client.auth.signOut();
+                }
+                localStorage.removeItem('nexus-supabase-url');
+                localStorage.removeItem('nexus-supabase-key');
+                supabaseClient = null;
+                initAuth();
+            }
+        });
+    }
+}
+
+function showAuthError(message) {
+    const errorEl = document.getElementById('auth-error');
+    if (errorEl) {
+        errorEl.textContent = message;
+        errorEl.classList.remove('hidden');
+    }
+}
+
+function hideAuthError() {
+    const errorEl = document.getElementById('auth-error');
+    if (errorEl) {
+        errorEl.classList.add('hidden');
+        errorEl.textContent = '';
+    }
+}
+
+function setSubmitLoading(isLoading) {
+    const btn = document.getElementById('auth-submit-btn');
+    if (btn) {
+        btn.disabled = isLoading;
+        btn.style.opacity = isLoading ? '0.7' : '';
+    }
+}
+
+// Bootstrap execution
+const startApp = () => {
+    initNavigation();
+    initAuth();
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', startApp);
+} else {
+    startApp();
 }
