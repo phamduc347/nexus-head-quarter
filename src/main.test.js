@@ -356,4 +356,75 @@ describe('Nexus HQ Core UI Tests', () => {
             expect(window.getRelativeTime(daysAgo)).toBe('vor 2d');
         });
     });
+
+    describe('Google Calendar & Timeline Integration', () => {
+        it('should correctly parse all-day event dates in local timezone to prevent day shifting', () => {
+            const dateStr = '2026-06-12';
+            const dateObj = window.parseAllDayDate(dateStr);
+            expect(dateObj.getFullYear()).toBe(2026);
+            expect(dateObj.getMonth()).toBe(5); // June is 5
+            expect(dateObj.getDate()).toBe(12);
+        });
+
+        it('should parse events correctly (both timed and all-day)', () => {
+            const timedEvent = {
+                summary: 'Meeting',
+                start: { dateTime: '2026-06-12T10:30:00+02:00' },
+                source: 'Google Calendar',
+                sourceClass: 'source-google'
+            };
+            const parsedTimed = window.parseEvent(timedEvent);
+            expect(parsedTimed.title).toBe('Meeting');
+            expect(parsedTimed.timeStr).toBe('10:30');
+            expect(parsedTimed.isAllDay).toBe(false);
+            expect(parsedTimed.dateStr).toBe('2026-06-12');
+
+            const allDayEvent = {
+                summary: 'Holiday',
+                start: { date: '2026-06-13' },
+                source: 'Persönlich',
+                sourceClass: 'source-personal'
+            };
+            const parsedAllDay = window.parseEvent(allDayEvent);
+            expect(parsedAllDay.title).toBe('Holiday');
+            expect(parsedAllDay.timeStr).toBe('Ganztägig');
+            expect(parsedAllDay.isAllDay).toBe(true);
+            expect(parsedAllDay.dateStr).toBe('2026-06-13');
+        });
+
+        it('should sort events with all-day events first, and then by time chronologically', () => {
+            const events = [
+                { title: 'Late Meeting', isAllDay: false, dateObj: new Date('2026-06-12T18:00:00Z') },
+                { title: 'All Day Event 1', isAllDay: true, dateObj: new Date('2026-06-12T00:00:00Z') },
+                { title: 'Early Meeting', isAllDay: false, dateObj: new Date('2026-06-12T09:00:00Z') }
+            ];
+            const sorted = window.sortEvents(events);
+            expect(sorted[0].title).toBe('All Day Event 1');
+            expect(sorted[1].title).toBe('Early Meeting');
+            expect(sorted[2].title).toBe('Late Meeting');
+        });
+
+        it('should generate correct German day labels ("Heute", "Morgen", and weekdays)', () => {
+            const today = new Date();
+            const tomorrow = new Date();
+            tomorrow.setDate(today.getDate() + 1);
+
+            const pad = num => String(num).padStart(2, '0');
+            const toKey = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+            expect(window.getGermanDayLabel(toKey(today))).toBe('Heute');
+            expect(window.getGermanDayLabel(toKey(tomorrow))).toBe('Morgen');
+
+            // Test specific date (2026-07-01 was a Wednesday)
+            expect(window.getGermanDayLabel('2026-07-01')).toBe('Mi');
+            expect(window.getGermanDayLabel('2026-07-02')).toBe('Do');
+            expect(window.getGermanDayLabel('2026-07-03')).toBe('Fr');
+        });
+
+        it('should format dates in German style (d. MMMM)', () => {
+            expect(window.getGermanFormattedDate('2026-06-12')).toBe('12. Juni');
+            expect(window.getGermanFormattedDate('2026-12-24')).toBe('24. Dezember');
+        });
+    });
 });
+

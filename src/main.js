@@ -35,6 +35,14 @@ function initNavigation() {
                 // Scroll content to top on screen switch
                 const content = target.querySelector('.screen-content');
                 if (content) content.scrollTop = 0;
+
+                // Screen specific hooks
+                if (targetId === 'screen-settings') {
+                    updateGoogleCalendarStatus();
+                } else if (targetId === 'screen-timeline') {
+                    initTimelineRefresh();
+                    renderTimelineEvents();
+                }
             };
 
             // Progressive enhancement: Fallback for browsers without View Transitions
@@ -672,7 +680,7 @@ async function fetchRSS(rssEl) {
         listEl.innerHTML = '<li class="rss-item revealed"><span class="rss-text">Lade News...</span></li>';
         
         const timestamp = Date.now();
-        const feedUrl = encodeURIComponent(`https://venturebeat.com/category/ai/feed/?t=${timestamp}`);
+        const feedUrl = encodeURIComponent(`https://news.google.com/rss/search?q=Latest+AI+News&hl=en-US&gl=US&ceid=US:en&t=${timestamp}`);
         const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${feedUrl}`);
         if (!res.ok) throw new Error('API Error');
         const data = await res.json();
@@ -687,8 +695,8 @@ async function fetchRSS(rssEl) {
             throw new Error('Invalid Feed Data');
         }
 
-        // Store items on the element
-        rssEl.items = data.items;
+        // Store sorted items on the element (newest first)
+        rssEl.items = (data.items || []).sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
         renderRSSItems(rssEl);
 
     } catch (err) {
@@ -771,6 +779,320 @@ function initRSSWidget(rssEl) {
     fetchRSS(rssEl);
 }
 
+// ========== GOOGLE CALENDAR INTEGRATION LOGIC ==========
+
+async function linkGoogleAccount() {
+    const client = getSupabaseClient();
+    if (!client) return;
+    localStorage.removeItem('google-calendar-disconnected');
+    const { error } = await client.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+            redirectTo: window.location.origin,
+            scopes: 'https://www.googleapis.com/auth/calendar.readonly'
+        }
+    });
+    if (error) {
+        console.error('Failed to link Google account', error);
+        alert('Fehler bei der Google-Verbindung: ' + error.message);
+    }
+}
+
+async function updateGoogleCalendarStatus() {
+    const statusContainer = document.getElementById('google-calendar-status');
+    if (!statusContainer) return;
+
+    const client = getSupabaseClient();
+    if (!client) {
+        statusContainer.innerHTML = `<span class="status-badge">Nicht verbunden</span>`;
+        return;
+    }
+
+    const { data: { session } } = await client.auth.getSession();
+    const disconnected = localStorage.getItem('google-calendar-disconnected') === 'true';
+
+    if (session && session.provider_token && !disconnected) {
+        statusContainer.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="status-badge badge-green-sm" style="margin-right: 4px;">Verbunden</span>
+                <button type="button" id="btn-disconnect-google" class="btn-link-google btn-text">Trennen</button>
+            </div>
+        `;
+        const disconnectBtn = document.getElementById('btn-disconnect-google');
+        if (disconnectBtn) {
+            disconnectBtn.addEventListener('click', () => {
+                localStorage.setItem('google-calendar-disconnected', 'true');
+                updateGoogleCalendarStatus();
+                renderTimelineEvents();
+            });
+        }
+    } else {
+        statusContainer.innerHTML = `
+            <button type="button" id="btn-link-google" class="btn-link-google btn-text">Verknüpfen</button>
+        `;
+        const linkBtn = document.getElementById('btn-link-google');
+        if (linkBtn) {
+            linkBtn.addEventListener('click', linkGoogleAccount);
+        }
+    }
+}
+
+function parseAllDayDate(dateStr) {
+    const parts = dateStr.split('-');
+    return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+}
+
+function parseEvent(evt) {
+    const isAllDay = !evt.start.dateTime;
+    let dateObj;
+    let dateStr;
+
+    if (isAllDay) {
+        dateStr = evt.start.date;
+        dateObj = parseAllDayDate(dateStr);
+    } else {
+        dateStr = evt.start.dateTime.split('T')[0];
+        dateObj = new Date(evt.start.dateTime);
+    }
+
+    let timeStr = 'Ganztägig';
+    if (!isAllDay) {
+        const hours = String(dateObj.getHours()).padStart(2, '0');
+        const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+        timeStr = `${hours}:${minutes}`;
+    }
+
+    return {
+        id: evt.id || Math.random().toString(36).substring(2, 9),
+        title: evt.summary || '(Kein Titel)',
+        dateStr: dateStr,
+        dateObj: dateObj,
+        timeStr: timeStr,
+        isAllDay: isAllDay,
+        source: evt.source || 'Google Calendar',
+        sourceClass: evt.sourceClass || 'source-google'
+    };
+}
+
+function sortEvents(events) {
+    return events.sort((a, b) => {
+        if (a.isAllDay && !b.isAllDay) return -1;
+        if (!a.isAllDay && b.isAllDay) return 1;
+        return a.dateObj - b.dateObj;
+    });
+}
+
+function getGermanDayLabel(dateStr) {
+    const today = new Date();
+    const tomorrow = new Date();
+    tomorrow.setDate(today.getDate() + 1);
+
+    const pad = num => String(num).padStart(2, '0');
+    const toKey = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+    const todayStr = toKey(today);
+    const tomorrowStr = toKey(tomorrow);
+
+    if (dateStr === todayStr) {
+        return 'Heute';
+    } else if (dateStr === tomorrowStr) {
+        return 'Morgen';
+    } else {
+        const parts = dateStr.split('-');
+        const dateObj = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+        const weekdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+        return weekdays[dateObj.getDay()];
+    }
+}
+
+function getGermanFormattedDate(dateStr) {
+    const parts = dateStr.split('-');
+    const dateObj = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    const months = [
+        'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
+        'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'
+    ];
+    return `${dateObj.getDate()}. ${months[dateObj.getMonth()]}`;
+}
+
+async function fetchGoogleCalendarEvents(providerToken) {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const timeMin = todayStart.toISOString();
+
+    const twoWeeksLater = new Date(todayStart.getTime() + 14 * 24 * 60 * 60 * 1000);
+    const timeMax = twoWeeksLater.toISOString();
+
+    const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}&singleEvents=true&orderBy=startTime`;
+
+    const response = await fetch(url, {
+        headers: {
+            'Authorization': `Bearer ${providerToken}`
+        }
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const status = response.status;
+        const err = new Error(errorData.error?.message || 'Google API Error');
+        err.status = status;
+        throw err;
+    }
+
+    const data = await response.json();
+    return data.items || [];
+}
+
+async function renderTimelineEvents(forceRefresh = false) {
+    const container = document.getElementById('timeline-events-container');
+    const spinner = document.getElementById('timeline-spinner');
+    if (!container) return;
+
+    if (spinner) spinner.classList.remove('hidden');
+
+    const client = getSupabaseClient();
+    let session = null;
+    if (client) {
+        const { data } = await client.auth.getSession();
+        session = data.session;
+    }
+
+    const disconnected = localStorage.getItem('google-calendar-disconnected') === 'true';
+    const isConnected = !!(session && session.provider_token && !disconnected);
+
+    let rawEvents = [];
+    let fetchError = null;
+
+    if (isConnected) {
+        try {
+            rawEvents = await fetchGoogleCalendarEvents(session.provider_token);
+        } catch (err) {
+            console.error('Error fetching Google Calendar events:', err);
+            fetchError = err;
+        }
+    }
+
+    if (spinner) spinner.classList.add('hidden');
+
+    if (fetchError) {
+        if (fetchError.status === 401) {
+            container.innerHTML = `
+                <div class="timeline-error-banner">
+                    <span>Google-Verbindung abgelaufen. Bitte erneut anmelden/verknüpfen.</span>
+                    <button type="button" id="btn-reconnect-google">Erneut verbinden</button>
+                </div>
+            `;
+            const reconnectBtn = document.getElementById('btn-reconnect-google');
+            if (reconnectBtn) {
+                reconnectBtn.addEventListener('click', linkGoogleAccount);
+            }
+            return;
+        } else {
+            container.innerHTML = `
+                <div class="timeline-error-banner">
+                    <span>Fehler beim Abrufen der Google Kalendereinträge: ${fetchError.message}</span>
+                    <button type="button" id="btn-retry-timeline">Erneut versuchen</button>
+                </div>
+            `;
+            const retryBtn = document.getElementById('btn-retry-timeline');
+            if (retryBtn) {
+                retryBtn.addEventListener('click', () => renderTimelineEvents(true));
+            }
+            return;
+        }
+    }
+
+    if (!isConnected) {
+        container.innerHTML = `
+            <div class="timeline-empty-state">
+                <span class="material-symbols-outlined timeline-empty-icon">link_off</span>
+                <div class="timeline-empty-title">Google Kalender nicht verknüpft</div>
+                <div class="timeline-empty-desc">Verknüpfe deinen Google-Kalender in den Einstellungen, um deine Termine anzuzeigen.</div>
+            </div>
+        `;
+        return;
+    }
+
+    if (rawEvents.length === 0) {
+        container.innerHTML = `
+            <div class="timeline-empty-state">
+                <span class="material-symbols-outlined timeline-empty-icon">event_busy</span>
+                <div class="timeline-empty-title">Keine Einträge</div>
+                <div class="timeline-empty-desc">In den nächsten 2 Wochen stehen keine Termine an.</div>
+            </div>
+        `;
+        return;
+    }
+
+    const parsedEvents = rawEvents.map(parseEvent);
+    const groups = {};
+    parsedEvents.forEach(evt => {
+        if (!groups[evt.dateStr]) {
+            groups[evt.dateStr] = [];
+        }
+        groups[evt.dateStr].push(evt);
+    });
+
+    const sortedDates = Object.keys(groups).sort();
+    container.innerHTML = '';
+    
+    sortedDates.forEach(dateStr => {
+        const eventsInDay = sortEvents(groups[dateStr]);
+        const dayLabel = getGermanDayLabel(dateStr);
+        const formattedDate = getGermanFormattedDate(dateStr);
+        const isHighlight = dayLabel === 'Heute' || dayLabel === 'Morgen';
+
+        const dayEl = document.createElement('div');
+        dayEl.className = 'timeline-day';
+
+        const headerEl = document.createElement('div');
+        headerEl.className = 'timeline-day-header';
+        headerEl.innerHTML = `
+            <span class="day-label ${isHighlight ? 'day-highlight' : ''}">${dayLabel}</span>
+            <span class="day-date">${formattedDate}</span>
+        `;
+        dayEl.appendChild(headerEl);
+
+        const eventsContainer = document.createElement('div');
+        eventsContainer.className = 'timeline-events';
+
+        eventsInDay.forEach(evt => {
+            const eventEl = document.createElement('div');
+            eventEl.className = 'timeline-event';
+            
+            const timeClass = evt.isAllDay ? 'event-time event-allday' : 'event-time';
+
+            eventEl.innerHTML = `
+                <span class="${timeClass}">${evt.timeStr}</span>
+                <div class="event-details">
+                    <span class="event-title">${evt.title}</span>
+                    <span class="event-source ${evt.sourceClass}">${evt.source}</span>
+                </div>
+            `;
+            eventsContainer.appendChild(eventEl);
+        });
+
+        dayEl.appendChild(eventsContainer);
+        container.appendChild(dayEl);
+    });
+}
+
+function initTimelineRefresh() {
+    const refreshBtn = document.getElementById('btn-timeline-refresh');
+    if (refreshBtn) {
+        if (refreshBtn.dataset.eventsBound) return;
+        refreshBtn.dataset.eventsBound = "true";
+
+        refreshBtn.addEventListener('click', async () => {
+            const icon = refreshBtn.querySelector('.material-symbols-outlined');
+            if (icon) icon.classList.add('rotating');
+            await renderTimelineEvents(true);
+            if (icon) icon.classList.remove('rotating');
+        });
+    }
+}
+
+// Expose functions globally for testing purposes
 // Expose functions globally for testing purposes
 if (typeof window !== 'undefined') {
     window.initNavigation = initNavigation;
@@ -789,6 +1111,16 @@ if (typeof window !== 'undefined') {
     window.fetchRSS = fetchRSS;
     window.renderRSSItems = renderRSSItems;
     window.initRSSWidget = initRSSWidget;
+    window.linkGoogleAccount = linkGoogleAccount;
+    window.updateGoogleCalendarStatus = updateGoogleCalendarStatus;
+    window.parseAllDayDate = parseAllDayDate;
+    window.parseEvent = parseEvent;
+    window.sortEvents = sortEvents;
+    window.getGermanDayLabel = getGermanDayLabel;
+    window.getGermanFormattedDate = getGermanFormattedDate;
+    window.fetchGoogleCalendarEvents = fetchGoogleCalendarEvents;
+    window.renderTimelineEvents = renderTimelineEvents;
+    window.initTimelineRefresh = initTimelineRefresh;
 }
 
 // ========== AUTHENTICATION LOGIC ==========
@@ -913,6 +1245,14 @@ function handleAuthStateChange(event, session) {
 
             // Initialize widgets for user
             initWidgets();
+            updateGoogleCalendarStatus();
+            
+            // Render timeline if active
+            const currentActiveScreen = document.querySelector('.screen.active');
+            if (currentActiveScreen && currentActiveScreen.id === 'screen-timeline') {
+                initTimelineRefresh();
+                renderTimelineEvents();
+            }
         } else {
             // User is logged out
             document.body.classList.add('auth-locked');
@@ -1102,6 +1442,29 @@ function setupAuthUIEvents() {
                 passwordInput.value = devPassword;
             }
         }
+    }
+
+    // Google Sign-In button click
+    const googleLoginBtn = document.getElementById('google-login-btn');
+    if (googleLoginBtn) {
+        googleLoginBtn.addEventListener('click', async () => {
+            const client = getSupabaseClient();
+            if (!client) {
+                showAuthError('Supabase Client nicht initialisiert.');
+                return;
+            }
+            localStorage.removeItem('google-calendar-disconnected');
+            const { error } = await client.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: window.location.origin,
+                    scopes: 'https://www.googleapis.com/auth/calendar.readonly'
+                }
+            });
+            if (error) {
+                showAuthError(error.message);
+            }
+        });
     }
 }
 
