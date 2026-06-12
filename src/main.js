@@ -1123,6 +1123,13 @@ function getWelcomeMessage() {
     return `Willkommen ${capitalize(name)}`;
 }
 
+function updateHomeWelcome() {
+    const welcomeEl = document.getElementById('home-welcome-msg');
+    if (welcomeEl) {
+        welcomeEl.textContent = getWelcomeMessage();
+    }
+}
+
 function getWeeklyDays() {
     const today = new Date();
     const currentDay = today.getDay();
@@ -1485,6 +1492,7 @@ if (typeof window !== 'undefined') {
     window.updateAvatar = updateAvatar;
     window.hashCode = hashCode;
     window.getWelcomeMessage = getWelcomeMessage;
+    window.updateHomeWelcome = updateHomeWelcome;
     window.getWeeklyDays = getWeeklyDays;
     window.renderWeeklyHeader = renderWeeklyHeader;
     window.updateSettingsAvatarPreview = updateSettingsAvatarPreview;
@@ -1669,6 +1677,7 @@ async function saveAllUserSettings() {
             if (error) throw error;
 
             updateAvatar();
+            updateHomeWelcome();
             renderTimelineEvents();
 
             if (statusText) {
@@ -1686,6 +1695,7 @@ async function saveAllUserSettings() {
         }
     } else {
         updateAvatar();
+        updateHomeWelcome();
         renderTimelineEvents();
         if (statusText) {
             statusText.textContent = "Lokal gespeichert (nicht angemeldet)";
@@ -1833,6 +1843,7 @@ function handleAuthStateChange(event, session) {
             initWidgets();
             updateGoogleCalendarStatus();
             updateAvatar();
+            updateHomeWelcome();
             
             // Render timeline if active
             const currentActiveScreen = document.querySelector('.screen.active');

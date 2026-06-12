@@ -105,10 +105,9 @@
             </header>
 
             <div class="screen-content">
-                <!-- Search Bar -->
-                <div class="search-bar">
-                    <span class="material-symbols-outlined search-icon">search</span>
-                    <input type="search" id="global-search" placeholder="Suchen (alles)..." aria-label="Globale Suche">
+                <!-- Welcome Message -->
+                <div class="home-welcome-container" style="margin-bottom: var(--space-lg); padding: 0 var(--space-xs);">
+                    <h2 class="home-welcome" id="home-welcome-msg" style="font-family: 'Outfit', sans-serif; font-size: 26px; font-weight: 800; color: var(--text-primary); margin: 0;">Willkommen</h2>
                 </div>
 
                 <!-- Dashboard Widget Grid -->
@@ -131,8 +130,7 @@
                     </div>
                 </div>
                 <div class="timeline-header-welcome-row">
-                    <h1 class="timeline-welcome" id="timeline-welcome-msg">Willkommen Mia</h1>
-                    <span class="timeline-today-label">Heute</span>
+                    <span class="timeline-today-label" style="margin: 0; font-family: 'Outfit', sans-serif; font-size: 26px; font-weight: 800; color: var(--text-primary);">Heute</span>
                 </div>
                 
                 <!-- Weekly Calendar strip -->
@@ -205,13 +203,6 @@
                             </div>
                         </div>
 
-                        <div class="account-actions">
-                            <button id="logout-btn" class="btn-secondary" type="button">
-                                <span class="material-symbols-outlined">logout</span>
-                                <span>Abmelden</span>
-                            </button>
-                            <button id="reset-setup-btn" class="btn-text-danger" type="button">Verbindung trennen</button>
-                        </div>
                     </div>
                 </section>
 
@@ -234,12 +225,21 @@
                 </section>
 
                 <!-- Save Settings Actions -->
-                <div class="settings-actions" style="margin-top: 24px; display: flex; gap: 12px; justify-content: flex-end; align-items: center; padding-bottom: 24px;">
+                <div class="settings-actions" style="margin-top: 24px; display: flex; gap: 12px; justify-content: flex-end; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 24px;">
                     <span id="settings-save-status" style="font-size: 14px; color: #a0aec0; display: none;"></span>
                     <button id="btn-save-settings" class="btn-primary" type="button" style="display: flex; align-items: center; gap: 8px;">
                         <span class="material-symbols-outlined" style="font-size: 20px;">save</span>
                         <span>Einstellungen speichern</span>
                     </button>
+                </div>
+
+                <!-- Danger / Account Session Actions -->
+                <div class="account-actions" style="margin-top: 24px; display: flex; flex-direction: column; gap: 12px; align-items: center; padding-bottom: 40px;">
+                    <button id="logout-btn" class="btn-secondary" type="button" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <span class="material-symbols-outlined">logout</span>
+                        <span>Abmelden</span>
+                    </button>
+                    <button id="reset-setup-btn" class="btn-text-danger" type="button">Verbindung trennen</button>
                 </div>
             </div>
         </div>
@@ -440,6 +440,23 @@
             </section>
         </div>
     </template>
+
+    <!-- ========== DIALOG: CONFIRM LOGOUT ========== -->
+    <dialog id="confirm-logout-dialog" class="widget-dialog confirm-dialog">
+        <div class="dialog-header">
+            <h3>Abmelden bestätigen</h3>
+            <button id="close-logout-dialog-btn" class="btn-icon-sm" aria-label="Schließen">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <div class="dialog-body">
+            <p style="margin-bottom: var(--space-md); font-size: 14px; color: var(--text-secondary); line-height: 1.5;">Möchtest du dich wirklich von Pham's Nexus Hub abmelden?</p>
+            <div class="dialog-actions" style="display: flex; gap: var(--space-sm); justify-content: flex-end; margin-top: var(--space-md);">
+                <button type="button" id="btn-cancel-logout" class="btn-secondary">Abbrechen</button>
+                <button type="button" id="btn-confirm-logout" class="btn-danger" style="background: #e63946; color: #ffffff; border: none; border-radius: var(--radius-md); padding: var(--space-xs) var(--space-md); cursor: pointer; font-weight: 500; font-size: 13px;">Ja, abmelden</button>
+            </div>
+        </div>
+    </dialog>
 
 
 
