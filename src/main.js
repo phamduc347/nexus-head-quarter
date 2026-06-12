@@ -1118,7 +1118,7 @@ function hashCode(str) {
 }
 
 function getWelcomeMessage() {
-    const name = currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.name || currentUser?.email?.split('@')[0] || 'Mia';
+    const name = currentUserSettings.username || currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.name || currentUser?.email?.split('@')[0] || 'Mia';
     const capitalize = s => s.charAt(0).toUpperCase() + s.slice(1);
     return `Willkommen ${capitalize(name)}`;
 }
@@ -1994,12 +1994,35 @@ function setupAuthUIEvents() {
 
     // 5. Setup Sign out and Connection Reset
     const logoutBtn = document.getElementById('logout-btn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', async () => {
+    const confirmLogoutDialog = document.getElementById('confirm-logout-dialog');
+    const closeLogoutDialogBtn = document.getElementById('close-logout-dialog-btn');
+    const btnCancelLogout = document.getElementById('btn-cancel-logout');
+    const btnConfirmLogout = document.getElementById('btn-confirm-logout');
+
+    if (logoutBtn && confirmLogoutDialog) {
+        logoutBtn.addEventListener('click', () => {
+            confirmLogoutDialog.showModal();
+        });
+    }
+
+    const closeLogoutDialog = () => {
+        if (confirmLogoutDialog) confirmLogoutDialog.close();
+    };
+
+    if (closeLogoutDialogBtn) {
+        closeLogoutDialogBtn.addEventListener('click', closeLogoutDialog);
+    }
+    if (btnCancelLogout) {
+        btnCancelLogout.addEventListener('click', closeLogoutDialog);
+    }
+
+    if (btnConfirmLogout) {
+        btnConfirmLogout.addEventListener('click', async () => {
             const client = getSupabaseClient();
             if (client) {
                 await client.auth.signOut();
             }
+            closeLogoutDialog();
         });
     }
 
