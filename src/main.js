@@ -788,7 +788,7 @@ async function linkGoogleAccount() {
     const { error } = await client.auth.signInWithOAuth({
         provider: 'google',
         options: {
-            redirectTo: window.location.origin,
+            redirectTo: window.location.origin + window.location.pathname,
             scopes: 'https://www.googleapis.com/auth/calendar.readonly'
         }
     });
@@ -1185,19 +1185,23 @@ async function initAuth() {
     }, 4000);
 
     try {
+        // Listen to initial and subsequent Auth state changes first to catch early events
+        client.auth.onAuthStateChange((event, session) => {
+            authLoaded = true;
+            clearTimeout(timeoutId);
+            handleAuthStateChange(event, session);
+        });
+
         // Explicitly check current session to transition out of loading state
         const { data, error } = await client.auth.getSession();
         if (error) throw error;
         
-        authLoaded = true;
-        clearTimeout(timeoutId);
-        
-        handleAuthStateChange('INITIAL', data ? data.session : null);
-
-        // Listen to subsequent Auth state changes
-        client.auth.onAuthStateChange((event, session) => {
-            handleAuthStateChange(event, session);
-        });
+        // If the onAuthStateChange hasn't triggered yet, run it with initial session
+        if (!authLoaded) {
+            authLoaded = true;
+            clearTimeout(timeoutId);
+            handleAuthStateChange('INITIAL', data ? data.session : null);
+        }
     } catch (e) {
         authLoaded = true;
         clearTimeout(timeoutId);
@@ -1224,6 +1228,15 @@ function showAuthCard(cardId) {
 function handleAuthStateChange(event, session) {
     const emailEl = document.getElementById('settings-user-email');
     currentUser = session ? session.user : null;
+    
+    // Clean up url hash if redirect contains token
+    if (session && window.location.hash && (window.location.hash.includes('access_token') || window.location.hash.includes('id_token'))) {
+        try {
+            history.replaceState(null, "", window.location.pathname + window.location.search);
+        } catch (e) {
+            console.warn('Failed to clean up URL hash', e);
+        }
+    }
     
     const updateDOM = () => {
         if (session) {
@@ -1457,7 +1470,7 @@ function setupAuthUIEvents() {
             const { error } = await client.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
-                    redirectTo: window.location.origin,
+                    redirectTo: window.location.origin + window.location.pathname,
                     scopes: 'https://www.googleapis.com/auth/calendar.readonly'
                 }
             });
