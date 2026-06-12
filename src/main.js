@@ -131,7 +131,7 @@ async function loadLayout(container) {
 
     // Default widgets if none saved
     if (!layout || !Array.isArray(layout)) {
-        layout = ['quicklinks', 'weather', 'dhl', 'rss'];
+        layout = ['quicklinks', 'weather', 'rss'];
     }
 
     layout.forEach(type => {

@@ -46,7 +46,6 @@ describe('Nexus HQ Core UI Tests', () => {
                 <div id="dashboard-grid"></div>
                 <template id="template-quicklinks"><div class="widget-wrapper" data-widget-id="quicklinks">Quicklinks</div></template>
                 <template id="template-weather"><div class="widget-wrapper" data-widget-id="weather">Weather</div></template>
-                <template id="template-dhl"><div class="widget-wrapper" data-widget-id="dhl">DHL</div></template>
                 <template id="template-rss"><div class="widget-wrapper" data-widget-id="rss">RSS</div></template>
             `;
 
@@ -55,11 +54,10 @@ describe('Nexus HQ Core UI Tests', () => {
 
             // Verify default widgets are rendered
             const widgets = container.querySelectorAll('.widget-wrapper');
-            expect(widgets.length).toBe(4);
+            expect(widgets.length).toBe(3);
             expect(widgets[0].dataset.widgetId).toBe('quicklinks');
             expect(widgets[1].dataset.widgetId).toBe('weather');
-            expect(widgets[2].dataset.widgetId).toBe('dhl');
-            expect(widgets[3].dataset.widgetId).toBe('rss');
+            expect(widgets[2].dataset.widgetId).toBe('rss');
         });
 
         it('should load custom layout from localStorage', () => {
