@@ -1,0 +1,11 @@
+# Configuration and Git Workflow guidelines for Google Jules
+jules_configuration:
+  git_workflow:
+    branching_rules:
+      target_branch: "dev"
+      allow_new_feature_branches: false
+    required_steps_before_work:
+      - step_1: "Switch/Checkout to 'dev' branch"
+      - step_2: "Merge 'main' branch into 'dev' branch to pull in the latest changes"
+      - step_3: "Resolve any merge conflicts if they occur"
+      - step_4: "Begin implementing the requested features/bugfixes directly on the 'dev' branch"
