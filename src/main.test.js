@@ -186,6 +186,7 @@ describe('Nexus HQ Core UI Tests', () => {
             // Reset window values
             delete window.NEXUS_SUPABASE_URL;
             delete window.NEXUS_SUPABASE_ANON_KEY;
+            window.NEXUS_ALLOW_REGISTRATION = true;
         });
 
         it('should get saved credentials from localStorage', () => {

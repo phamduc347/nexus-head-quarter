@@ -511,6 +511,12 @@ function handleAuthStateChange(event, session) {
 }
 
 function setupAuthUIEvents() {
+    const allowRegistration = typeof window !== 'undefined' && window.NEXUS_ALLOW_REGISTRATION === true;
+    const authTabs = document.querySelector('.auth-tabs');
+    if (authTabs && !allowRegistration) {
+        authTabs.classList.add('hidden');
+    }
+
     // 1. Setup credential storage form
     const setupForm = document.getElementById('setup-form');
     if (setupForm) {
@@ -582,6 +588,10 @@ function setupAuthUIEvents() {
             }
 
             if (isRegisterMode) {
+                if (!allowRegistration) {
+                    showAuthError('Registrierung ist derzeit deaktiviert.');
+                    return;
+                }
                 const confirmPassword = confirmInput ? confirmInput.value : '';
                 if (password !== confirmPassword) {
                     showAuthError('Passwörter stimmen nicht überein.');
@@ -612,6 +622,9 @@ function setupAuthUIEvents() {
     // 4. Setup Show Setup Settings button
     const showSetupBtn = document.getElementById('btn-show-setup');
     if (showSetupBtn) {
+        if (!allowRegistration) {
+            showSetupBtn.classList.add('hidden');
+        }
         showSetupBtn.addEventListener('click', () => {
             showAuthCard('auth-setup');
         });
@@ -642,6 +655,22 @@ function setupAuthUIEvents() {
                 initAuth();
             }
         });
+    }
+
+    // 6. Autofill local development credentials if set in config.js
+    if (typeof window !== 'undefined') {
+        const devEmail = window.NEXUS_DEV_EMAIL;
+        const devPassword = window.NEXUS_DEV_PASSWORD;
+        if (devEmail && devPassword) {
+            const emailInput = document.getElementById('login-email');
+            const passwordInput = document.getElementById('login-password');
+            if (emailInput && !emailInput.value) {
+                emailInput.value = devEmail;
+            }
+            if (passwordInput && !passwordInput.value) {
+                passwordInput.value = devPassword;
+            }
+        }
     }
 }
 
