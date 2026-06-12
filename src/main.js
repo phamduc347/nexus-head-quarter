@@ -1273,6 +1273,7 @@ if (typeof window !== 'undefined') {
     window.saveAllUserSettings = saveAllUserSettings;
     window.initTheme = initTheme;
     window.toggleTheme = toggleTheme;
+    window.updateAvatar = updateAvatar;
 }
 
 // ========== AUTHENTICATION LOGIC ==========
@@ -1331,6 +1332,22 @@ async function loadUserSettings() {
             currentUserSettings.hidden_calendars = [];
         }
     }
+}
+
+function updateAvatar() {
+    const avatarUrl = currentUser?.user_metadata?.avatar_url || currentUser?.user_metadata?.picture;
+    const avatars = document.querySelectorAll('.avatar');
+    avatars.forEach(avatar => {
+        if (avatarUrl) {
+            avatar.style.backgroundImage = `url(${avatarUrl})`;
+            avatar.style.backgroundSize = 'cover';
+            avatar.style.backgroundPosition = 'center';
+            avatar.style.border = '1px solid var(--border-strong)';
+        } else {
+            avatar.style.backgroundImage = '';
+            avatar.style.border = '';
+        }
+    });
 }
 
 async function updateSetting(key, value) {
@@ -1524,6 +1541,7 @@ function handleAuthStateChange(event, session) {
             // Initialize widgets for user
             initWidgets();
             updateGoogleCalendarStatus();
+            updateAvatar();
             
             // Render timeline if active
             const currentActiveScreen = document.querySelector('.screen.active');
@@ -1545,6 +1563,7 @@ function handleAuthStateChange(event, session) {
 
             showAuthCard('auth-login');
             if (emailEl) emailEl.textContent = '';
+            updateAvatar();
             
             // Clear layout container to prevent residual visual data
             const grid = document.getElementById('dashboard-grid');

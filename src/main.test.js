@@ -514,6 +514,25 @@ describe('Nexus HQ Core UI Tests', () => {
             expect(document.documentElement.getAttribute('data-theme')).toBe('light');
             expect(localStorage.getItem('nexus-theme')).toBe('light');
         });
+
+        it('should update avatar background image if user has Google profile picture', async () => {
+            document.body.innerHTML += `<div class="avatar"></div>`;
+            window.handleAuthStateChange('INITIAL', { 
+                user: { 
+                    id: 'user-123', 
+                    email: 'user@gmail.com',
+                    user_metadata: { avatar_url: 'https://lh3.googleusercontent.com/avatar' } 
+                } 
+            });
+            await new Promise(resolve => setTimeout(resolve, 10));
+
+            const avatar = document.querySelector('.avatar');
+            expect(avatar.style.backgroundImage).toContain('https://lh3.googleusercontent.com/avatar');
+
+            window.handleAuthStateChange('SIGNED_OUT', null);
+            await new Promise(resolve => setTimeout(resolve, 10));
+            expect(avatar.style.backgroundImage).toBe('');
+        });
     });
 });
 
