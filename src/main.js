@@ -3,6 +3,42 @@
  * Handles screen navigation, widget rendering, dragging, and dynamic updates.
  */
 
+// ========== THEME TOGGLE LOGIC ==========
+function initTheme() {
+    const savedTheme = localStorage.getItem('nexus-theme');
+    const systemPrefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const theme = savedTheme || (systemPrefersDark ? 'dark' : 'light');
+    
+    document.documentElement.setAttribute('data-theme', theme);
+    // Use timeout to let DOM render before updating icons
+    setTimeout(() => {
+        updateThemeToggleIcons(theme);
+    }, 0);
+}
+
+function toggleTheme() {
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('nexus-theme', newTheme);
+    updateThemeToggleIcons(newTheme);
+}
+
+function updateThemeToggleIcons(theme) {
+    const themeBtns = document.querySelectorAll('.theme-toggle-btn');
+    themeBtns.forEach(btn => {
+        const icon = btn.querySelector('.material-symbols-outlined');
+        if (icon) {
+            icon.textContent = theme === 'dark' ? 'light_mode' : 'dark_mode';
+        }
+    });
+}
+
+// Run immediately to avoid flash of wrong theme
+initTheme();
+
+
 
 /**
  * Bottom navigation — switch between screens
@@ -785,7 +821,7 @@ async function linkGoogleAccount() {
     const client = getSupabaseClient();
     if (!client) return;
     localStorage.removeItem('google-calendar-disconnected');
-    const { error } = await client.auth.signInWithOAuth({
+    const { error } = await client.auth.linkIdentity({
         provider: 'google',
         options: {
             redirectTo: window.location.origin + window.location.pathname,
@@ -1235,6 +1271,8 @@ if (typeof window !== 'undefined') {
     window.loadUserSettings = loadUserSettings;
     window.updateSetting = updateSetting;
     window.saveAllUserSettings = saveAllUserSettings;
+    window.initTheme = initTheme;
+    window.toggleTheme = toggleTheme;
 }
 
 // ========== AUTHENTICATION LOGIC ==========
@@ -1874,6 +1912,11 @@ const startApp = async () => {
     if (saveSettingsBtn) {
         saveSettingsBtn.addEventListener('click', saveAllUserSettings);
     }
+
+    const themeBtns = document.querySelectorAll('.theme-toggle-btn');
+    themeBtns.forEach(btn => {
+        btn.addEventListener('click', toggleTheme);
+    });
 };
 
 if (document.readyState === 'loading') {

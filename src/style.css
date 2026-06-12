@@ -6,29 +6,29 @@
 /* ----- Design Tokens ----- */
 :root {
     /* Backgrounds */
-    --bg-primary: #e2e4e7;       /* Keeping industrial concrete gray background */
-    --bg-secondary: #ffffff;     /* Keeping pure paper white for cards */
-    --bg-tertiary: #f3f4f6;      /* Off-white for panels */
-    --bg-hover: #ff5500;         /* Safety orange hover highlight */
-    --bg-input: #f3f4f6;         /* Light input backgrounds */
+    --bg-primary: #FAFAFA;       /* Neutral 100 from Orga CI */
+    --bg-secondary: #FFFFFF;     /* Pure White */
+    --bg-tertiary: #F2F2F2;      /* Neutral 200 */
+    --bg-hover: #E8EDE6;         /* Primary Light (soft green) */
+    --bg-input: #FFFFFF;         /* White input backgrounds */
 
     /* Text */
-    --text-primary: #000000;     /* Keeping solid black text */
-    --text-secondary: #1f2937;   /* Deep charcoal for secondary text */
-    --text-muted: #4b5563;       /* Slate 600 for minor details */
+    --text-primary: #282828;     /* Neutral 700 */
+    --text-secondary: #6B7280;   /* Secondary gray */
+    --text-muted: #9CA3AF;       /* Slate 400 for minor details */
 
     /* Accents */
-    --accent-blue: #ff5500;      /* Safety Orange Accent */
-    --accent-green: #10b981;     /* Emerald Green */
-    --accent-amber: #f59e0b;     /* Amber */
-    --accent-red: #dc2626;       /* Alert red */
-    --accent-purple: #ff5500;    /* Safety Orange */
-    --accent-teal: #14b8a6;      /* Teal */
-    --accent-orange: #ff5500;    /* Safety Orange */
+    --accent-blue: #5A6F52;      /* Primary sage green from Orga CI */
+    --accent-green: #2E7D32;     /* Success */
+    --accent-amber: #D69E2E;     /* Amber */
+    --accent-red: #D32F2F;       /* Error */
+    --accent-purple: #6B46C1;    /* Purple */
+    --accent-teal: #319795;      /* Teal */
+    --accent-orange: #E53E3E;    /* Orange */
 
-    /* Borders (Reverted to soft mockup style borders) */
-    --border-color: rgba(0, 0, 0, 0.05);
-    --border-strong: rgba(0, 0, 0, 0.09);
+    /* Borders */
+    --border-color: #E5E5E5;     /* Neutral 300 */
+    --border-strong: #D1D5DB;
 
     /* Spacing */
     --space-xs: 4px;
@@ -38,14 +38,15 @@
     --space-xl: 20px;
     --space-2xl: 24px;
 
-    /* Radii (Reverted to premium rounded mockup style) */
-    --radius-sm: 10px;
-    --radius-md: 16px;
-    --radius-lg: 24px;
+    /* Radii */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
     --radius-full: 9999px;
 
-    /* Typography (Reverted to Outfit & Inter) */
-    --font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    /* Typography */
+    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 
     /* Layout */
     --header-height: 56px;
@@ -55,6 +56,29 @@
     /* Transitions */
     --transition-fast: 150ms ease;
     --transition-normal: 250ms ease;
+}
+
+html[data-theme="dark"] {
+    --bg-primary: #121212;
+    --bg-secondary: #1E1E1E;
+    --bg-tertiary: #2D2D2D;
+    --bg-hover: #3E4A3B;
+    --bg-input: #2D2D2D;
+
+    --text-primary: #E5E5E5;
+    --text-secondary: #9CA3AF;
+    --text-muted: #6B7280;
+
+    --accent-blue: #8FA885; /* Light sage green for dark mode */
+    --accent-green: #4CAF50;
+    --accent-amber: #FFC107;
+    --accent-red: #EF5350;
+    --accent-purple: #B39DDB;
+    --accent-teal: #80CBC4;
+    --accent-orange: #FF8A65;
+
+    --border-color: #2D2D2D;
+    --border-strong: #3D3D3D;
 }
 
 /* ----- Reset ----- */
@@ -194,12 +218,12 @@ input {
 }
 
 .ptr-container.ready .ptr-icon {
-    color: #ff5500; /* Safety Orange */
+    color: var(--accent-blue);
 }
 
 .ptr-container.loading .ptr-icon {
     animation: ptr-spin 0.8s linear infinite;
-    color: #ff5500;
+    color: var(--accent-blue);
 }
 
 @keyframes ptr-spin {
@@ -221,7 +245,7 @@ input {
     gap: var(--space-md);
     flex-shrink: 0;
     border-bottom: 1px solid var(--border-color);
-    background: var(--bg-primary);
+    background: var(--bg-secondary);
     view-transition-name: app-header;
 }
 
@@ -451,28 +475,29 @@ input {
    WEATHER WIDGET
    =================================================================== */
 .widget-weather {
-    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 60%, #1d4ed8 100%);
-    border-color: rgba(59, 130, 246, 0.3);
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
 }
 .widget-weather .weather-location {
-    color: #93c5fd;
+    color: var(--text-secondary);
 }
 .widget-weather .weather-desc {
-    color: #bfdbfe;
+    color: var(--text-primary);
 }
 .widget-weather .weather-range {
-    color: #cbd5e1;
+    color: var(--text-muted);
 }
 .widget-weather .forecast-name {
-    color: #93c5fd;
+    color: var(--text-secondary);
 }
 .widget-weather .forecast-temps {
-    color: #cbd5e1;
+    color: var(--text-muted);
 }
 
 .btn-weather-refresh {
     background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid var(--border-color);
     border-radius: var(--radius-full);
     width: 28px;
     height: 28px;
@@ -480,14 +505,14 @@ input {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    color: #93c5fd;
+    color: var(--text-secondary);
     transition: all var(--transition-fast);
 }
 
 .btn-weather-refresh:hover {
-    background: rgba(147, 197, 253, 0.15);
-    border-color: rgba(147, 197, 253, 0.5);
-    color: #ffffff;
+    background: var(--bg-hover);
+    border-color: var(--accent-blue);
+    color: var(--accent-blue);
 }
 
 .btn-weather-refresh .material-symbols-outlined {
@@ -549,8 +574,8 @@ input {
     width: 72px;
     height: 72px;
     border-radius: var(--radius-md);
-    background: rgba(255, 255, 255, 0.35);
-    border: 1px dashed rgba(3, 105, 161, 0.3);
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
     flex-shrink: 0;
     display: flex;
     align-items: center;
@@ -559,7 +584,7 @@ input {
 
 .weather-icon-container .material-symbols-outlined {
     font-size: 48px;
-    color: #ffffff;
+    color: var(--accent-blue);
 }
 
 @keyframes rotate {
@@ -576,7 +601,7 @@ input {
     display: flex;
     justify-content: space-between;
     padding-top: var(--space-md);
-    border-top: 1px solid rgba(3, 105, 161, 0.15);
+    border-top: 1px solid var(--border-color);
 }
 
 .forecast-day {
@@ -606,8 +631,8 @@ input {
     width: 28px;
     height: 28px;
     border-radius: var(--radius-sm);
-    background: rgba(255, 255, 255, 0.35);
-    border: 1px dashed rgba(3, 105, 161, 0.2);
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
 }
 
 .forecast-temps {
@@ -1174,8 +1199,8 @@ input {
 }
 
 .nav-item.active {
-    background: #ff5500;
-    color: #000000;
+    background: var(--bg-hover);
+    color: var(--accent-blue);
 }
 
 .nav-item.active .nav-label {
@@ -1185,10 +1210,10 @@ input {
 }
 
 .nav-item:hover {
-    color: #ff5500;
+    color: var(--accent-blue);
 }
 .nav-item.active:hover {
-    color: #000000;
+    color: var(--accent-blue);
 }
 
 /* Floating Add Button */
@@ -1196,18 +1221,18 @@ input {
     width: 42px;
     height: 42px;
     border-radius: var(--radius-full);
-    background: #ff5500;
-    color: #000000 !important;
+    background: var(--accent-blue);
+    color: #ffffff !important;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border-color);
     transition: transform var(--transition-fast);
 }
 .nav-add:hover {
     transform: scale(1.08);
-    background: #ffffff;
-    color: #ff5500 !important;
+    background: var(--bg-hover);
+    color: var(--accent-blue) !important;
 }
 .nav-add .material-symbols-outlined {
     font-size: 24px;
@@ -1579,7 +1604,7 @@ input {
 
 .auth-tab.active {
     background: var(--bg-secondary);
-    color: #ff5500;
+    color: var(--accent-blue);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
@@ -1622,9 +1647,9 @@ input {
 
 /* Primary Button Override/New */
 .btn-primary {
-    background: #000000;
+    background: var(--accent-blue);
     color: #ffffff;
-    font-weight: 700;
+    font-weight: 600;
     font-size: 14px;
     padding: 12px var(--space-lg);
     border-radius: var(--radius-md);
@@ -1635,8 +1660,8 @@ input {
 }
 
 .btn-primary:hover:not(:disabled) {
-    background: #ff5500;
-    color: #000000;
+    background: var(--bg-hover);
+    color: var(--accent-blue);
 }
 
 .btn-primary:active:not(:disabled) {
@@ -1649,10 +1674,10 @@ input {
 }
 
 .btn-secondary {
-    background: #ffffff;
-    border: 1px solid var(--border-color);
-    color: #000000;
-    font-weight: 700;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-strong);
+    color: var(--text-primary);
+    font-weight: 600;
     font-size: 13px;
     padding: 10px var(--space-md);
     border-radius: var(--radius-md);
@@ -1664,9 +1689,9 @@ input {
 }
 
 .btn-secondary:hover {
-    background: #ff5500;
-    border-color: #ff5500;
-    color: #000000;
+    background: var(--bg-hover);
+    border-color: var(--accent-blue);
+    color: var(--accent-blue);
 }
 
 .btn-text-danger {
@@ -1716,7 +1741,7 @@ input {
     height: 40px;
     border: 3px solid rgba(0, 0, 0, 0.05);
     border-radius: 50%;
-    border-top-color: #ff5500;
+    border-top-color: var(--accent-blue);
     animation: spin 1s ease-in-out infinite;
 }
 

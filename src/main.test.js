@@ -189,7 +189,8 @@ describe('Nexus HQ Core UI Tests', () => {
                 onAuthStateChange: vi.fn().mockReturnValue({ data: { subscription: {} } }),
                 signInWithPassword: vi.fn(),
                 signUp: vi.fn(),
-                signOut: vi.fn()
+                signOut: vi.fn(),
+                linkIdentity: vi.fn()
             };
             mockSupabase = {
                 auth: mockAuth,
@@ -497,6 +498,21 @@ describe('Nexus HQ Core UI Tests', () => {
         it('should format dates in German style (d. MMMM)', () => {
             expect(window.getGermanFormattedDate('2026-06-12')).toBe('12. Juni');
             expect(window.getGermanFormattedDate('2026-12-24')).toBe('24. Dezember');
+        });
+
+        it('should toggle theme from light to dark and store it in localStorage', () => {
+            document.documentElement.setAttribute('data-theme', 'light');
+            localStorage.setItem('nexus-theme', 'light');
+
+            window.toggleTheme();
+
+            expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+            expect(localStorage.getItem('nexus-theme')).toBe('dark');
+
+            window.toggleTheme();
+
+            expect(document.documentElement.getAttribute('data-theme')).toBe('light');
+            expect(localStorage.getItem('nexus-theme')).toBe('light');
         });
     });
 });
