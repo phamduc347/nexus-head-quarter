@@ -120,31 +120,39 @@
 
         <!-- ========== SCREEN: TIMELINE ========== -->
         <div class="screen" id="screen-timeline">
-            <header class="app-header">
-                <button class="btn-icon" aria-label="Menü öffnen">
-                    <span class="material-symbols-outlined">menu</span>
-                </button>
-                <h1 class="header-title">Timeline</h1>
-                <button class="btn-icon theme-toggle-btn" aria-label="Design umschalten">
-                    <span class="material-symbols-outlined">dark_mode</span>
-                </button>
-                <div class="avatar" aria-label="Benutzerprofil"></div>
+            <header class="app-header timeline-header-wrapper">
+                <div class="timeline-header-top">
+                    <span class="timeline-header-date" id="timeline-header-date">28. Mai 2025</span>
+                    <div class="timeline-header-actions">
+                        <button class="btn-icon theme-toggle-btn" aria-label="Design umschalten">
+                            <span class="material-symbols-outlined">dark_mode</span>
+                        </button>
+                        <div class="avatar" aria-label="Benutzerprofil"></div>
+                    </div>
+                </div>
+                <div class="timeline-header-welcome-row">
+                    <h1 class="timeline-welcome" id="timeline-welcome-msg">Willkommen Mia</h1>
+                    <span class="timeline-today-label">Heute</span>
+                </div>
+                
+                <!-- Weekly Calendar strip -->
+                <div class="timeline-weekly-strip" id="timeline-weekly-strip"></div>
             </header>
 
-            <div class="screen-content">
-                <!-- Timeline -->
-                <section class="timeline-section" aria-label="Nächste 2 Wochen">
-                    <div class="section-header">
-                        <h2 class="section-title-lg">Nächste 2 Wochen</h2>
+            <div class="screen-content timeline-screen-content">
+                <section class="timeline-section" aria-label="Timeline-Events">
+                    <div class="timeline-spinner-row">
                         <div class="spinner-sm hidden" id="timeline-spinner"></div>
                         <button class="btn-icon-sm" id="btn-timeline-refresh" aria-label="Aktualisieren">
                             <span class="material-symbols-outlined">refresh</span>
                         </button>
                     </div>
 
-                    <div class="timeline-container" id="timeline-events-container"></div>
+                    <div class="timeline-layout">
+                        <div class="timeline-axis" id="timeline-axis"></div>
+                        <div class="timeline-container" id="timeline-events-container"></div>
+                    </div>
                 </section>
-
             </div>
         </div>
 
@@ -175,6 +183,28 @@
                                 <span class="account-status">Mit Supabase verbunden</span>
                             </div>
                         </div>
+                        
+                        <!-- Profile Editing Fields -->
+                        <div class="profile-settings-fields" style="margin-top: 16px; display: flex; flex-direction: column; gap: 12px; border-top: 1px solid var(--border-color); padding-top: 16px; margin-bottom: 16px;">
+                            <div class="form-group">
+                                <label for="settings-username">Nutzername</label>
+                                <input type="text" id="settings-username" placeholder="Dein Nutzername">
+                            </div>
+                            <div class="form-group">
+                                <label for="settings-avatar-file">Profilbild (optional)</label>
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <div class="avatar-preview-wrapper" style="width: 48px; height: 48px; border-radius: 50%; background: var(--bg-secondary); border: 1px solid var(--border-color); overflow: hidden; display: flex; align-items: center; justify-content: center; flex-shrink: 0; position: relative;">
+                                        <span class="material-symbols-outlined" id="settings-avatar-placeholder" style="font-size: 24px; color: var(--text-muted);">person</span>
+                                        <img id="settings-avatar-img" src="" alt="Vorschau" style="width: 100%; height: 100%; display: none; object-fit: cover;">
+                                    </div>
+                                    <div style="flex-grow: 1;">
+                                        <input type="file" id="settings-avatar-file" accept="image/*" style="font-size: 13px; width: 100%;">
+                                        <button type="button" id="btn-remove-avatar" class="btn-text-danger" style="font-size: 11px; margin-top: 4px; display: none; padding: 0; background: none; border: none; cursor: pointer;">Profilbild entfernen</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="account-actions">
                             <button id="logout-btn" class="btn-secondary" type="button">
                                 <span class="material-symbols-outlined">logout</span>

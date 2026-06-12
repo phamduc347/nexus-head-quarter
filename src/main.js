@@ -958,11 +958,26 @@ function parseEvent(evt) {
         dateObj = new Date(evt.start.dateTime);
     }
 
+    let endObj = null;
+    if (evt.end) {
+        if (evt.end.dateTime) {
+            endObj = new Date(evt.end.dateTime);
+        } else if (evt.end.date) {
+            endObj = parseAllDayDate(evt.end.date);
+        }
+    }
+
     let timeStr = 'Ganztägig';
     if (!isAllDay) {
         const hours = String(dateObj.getHours()).padStart(2, '0');
         const minutes = String(dateObj.getMinutes()).padStart(2, '0');
-        timeStr = `${hours}:${minutes}`;
+        if (endObj && evt.end.dateTime) {
+            const endHours = String(endObj.getHours()).padStart(2, '0');
+            const endMinutes = String(endObj.getMinutes()).padStart(2, '0');
+            timeStr = `${hours}:${minutes} - ${endHours}:${endMinutes}`;
+        } else {
+            timeStr = `${hours}:${minutes}`;
+        }
     }
 
     return {
@@ -970,11 +985,17 @@ function parseEvent(evt) {
         title: evt.summary || '(Kein Titel)',
         dateStr: dateStr,
         dateObj: dateObj,
+        endObj: endObj,
         timeStr: timeStr,
         isAllDay: isAllDay,
         source: evt.calendarName || evt.source || 'Google Calendar',
         sourceClass: evt.sourceClass || 'source-google',
-        calendarColor: evt.calendarColor || null
+        calendarColor: evt.calendarColor || null,
+        description: evt.description || '',
+        location: evt.location || '',
+        hangoutLink: evt.hangoutLink || '',
+        attendees: evt.attendees || [],
+        organizer: evt.organizer || null
     };
 }
 
@@ -1088,12 +1109,68 @@ async function fetchGoogleCalendarEvents(providerToken) {
     return results.flat();
 }
 
+function hashCode(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return hash;
+}
+
+function getWelcomeMessage() {
+    const name = currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.name || currentUser?.email?.split('@')[0] || 'Mia';
+    const capitalize = s => s.charAt(0).toUpperCase() + s.slice(1);
+    return `Willkommen ${capitalize(name)}`;
+}
+
+function getWeeklyDays() {
+    const today = new Date();
+    const currentDay = today.getDay();
+    const daysToSubtract = currentDay === 0 ? 6 : currentDay - 1;
+    const monday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - daysToSubtract);
+    
+    const weekDays = [];
+    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const germanDayNames = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+    
+    for (let i = 0; i < 7; i++) {
+        const nextDay = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i);
+        weekDays.push({
+            dayName: dayNames[i],
+            germanDayName: germanDayNames[i],
+            dayNum: nextDay.getDate(),
+            dateStr: `${nextDay.getFullYear()}-${String(nextDay.getMonth() + 1).padStart(2, '0')}-${String(nextDay.getDate()).padStart(2, '0')}`
+        });
+    }
+    return weekDays;
+}
+
+function renderWeeklyHeader() {
+    const stripContainer = document.getElementById('timeline-weekly-strip');
+    if (!stripContainer) return;
+    
+    const weekDays = getWeeklyDays();
+    const today = new Date();
+    const pad = num => String(num).padStart(2, '0');
+    const todayStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+    
+    stripContainer.innerHTML = '';
+    weekDays.forEach(day => {
+        const isToday = day.dateStr === todayStr;
+        const dayEl = document.createElement('div');
+        dayEl.className = `weekly-day-item ${isToday ? 'active' : ''}`;
+        dayEl.innerHTML = `
+            <span class="weekly-day-name">${day.dayName}</span>
+            <span class="weekly-day-number">${day.dayNum}</span>
+        `;
+        stripContainer.appendChild(dayEl);
+    });
+}
+
 async function renderTimelineEvents(forceRefresh = false) {
     const container = document.getElementById('timeline-events-container');
     const spinner = document.getElementById('timeline-spinner');
     if (!container) return;
-
-    if (spinner) spinner.classList.remove('hidden');
 
     const client = getSupabaseClient();
     let session = null;
@@ -1104,6 +1181,35 @@ async function renderTimelineEvents(forceRefresh = false) {
 
     const disconnected = localStorage.getItem('google-calendar-disconnected') === 'true';
     const isConnected = !!(session && session.provider_token && !disconnected);
+
+    // Set today's date in header
+    const headerDateEl = document.getElementById('timeline-header-date');
+    if (headerDateEl) {
+        const today = new Date();
+        const pad = num => String(num).padStart(2, '0');
+        const todayStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+        headerDateEl.textContent = getGermanFormattedDate(todayStr) + ` ${today.getFullYear()}`;
+    }
+
+    // Set welcome message
+    const welcomeMsgEl = document.getElementById('timeline-welcome-msg');
+    if (welcomeMsgEl) {
+        welcomeMsgEl.textContent = getWelcomeMessage();
+    }
+
+    // Show or hide calendar header items based on connection
+    const stripContainer = document.getElementById('timeline-weekly-strip');
+    const todayLabel = document.querySelector('.timeline-today-label');
+    if (isConnected) {
+        if (stripContainer) stripContainer.style.display = 'flex';
+        if (todayLabel) todayLabel.style.display = 'block';
+        renderWeeklyHeader();
+    } else {
+        if (stripContainer) stripContainer.style.display = 'none';
+        if (todayLabel) todayLabel.style.display = 'none';
+    }
+
+    if (spinner) spinner.classList.remove('hidden');
 
     let rawEvents = [];
     let fetchError = null;
@@ -1202,21 +1308,124 @@ async function renderTimelineEvents(forceRefresh = false) {
         eventsContainer.className = 'timeline-events';
 
         eventsInDay.forEach(evt => {
-            const eventEl = document.createElement('div');
-            eventEl.className = 'timeline-event';
+            const now = new Date();
+            let isCurrentActive = false;
+            if (!evt.isAllDay && evt.dateObj && evt.endObj) {
+                const isToday = getGermanDayLabel(evt.dateStr) === 'Heute';
+                if (isToday && now >= evt.dateObj && now <= evt.endObj) {
+                    isCurrentActive = true;
+                }
+            }
+
+            const eventRow = document.createElement('div');
+            eventRow.className = `timeline-event-row ${isCurrentActive ? 'active-row' : ''}`;
+
+            const axisCol = document.createElement('div');
+            axisCol.className = 'timeline-axis-col';
+            axisCol.innerHTML = `
+                <div class="timeline-axis-dot ${isCurrentActive ? 'active-dot' : ''}"></div>
+                <div class="timeline-axis-line-segment"></div>
+            `;
+            eventRow.appendChild(axisCol);
+
+            const cardCol = document.createElement('div');
+            cardCol.className = 'timeline-event-card-col';
+
+            const card = document.createElement('div');
+            card.className = `timeline-card ${isCurrentActive ? 'active-card' : ''}`;
             
             const timeClass = evt.isAllDay ? 'event-time event-allday' : 'event-time';
-            
-            const sourceStyle = evt.calendarColor ? `style="color: ${evt.calendarColor}"` : '';
+            const sourceStyle = evt.calendarColor ? `style="border-left: 4px solid ${evt.calendarColor}"` : '';
 
-            eventEl.innerHTML = `
-                <span class="${timeClass}">${evt.timeStr}</span>
-                <div class="event-details">
-                    <span class="event-title">${evt.title}</span>
-                    <span class="event-source ${evt.sourceClass}" ${sourceStyle}>${evt.source}</span>
+            // Card Inner HTML
+            let descriptionHtml = '';
+            if (evt.description) {
+                descriptionHtml = `<p class="timeline-card-description">${evt.description}</p>`;
+            }
+
+            let locationHtml = '';
+            if (evt.location) {
+                locationHtml = `
+                    <div class="timeline-card-meta-row location-row">
+                        <span class="material-symbols-outlined font-icon">location_on</span>
+                        <span class="meta-text">${evt.location}</span>
+                    </div>
+                `;
+            }
+
+            let organizerHtml = '';
+            if (evt.organizer && evt.organizer.displayName) {
+                organizerHtml = `
+                    <div class="timeline-card-meta-row organizer-row">
+                        <span class="material-symbols-outlined font-icon">person</span>
+                        <span class="meta-text">Organisator: ${evt.organizer.displayName}</span>
+                    </div>
+                `;
+            }
+
+            let footerHtml = '';
+            let hasFooter = (evt.attendees && evt.attendees.length > 0) || evt.hangoutLink;
+            if (hasFooter) {
+                let attendeesHtml = '';
+                if (evt.attendees && evt.attendees.length > 0) {
+                    const maxAvatars = 5;
+                    const avatarItems = evt.attendees.slice(0, maxAvatars).map(att => {
+                        const name = att.displayName || att.email || '?';
+                        const initial = name.charAt(0).toUpperCase();
+                        const colors = ['#5A6F52', '#7A9A60', '#A2B997', '#C4D7B2', '#E1ECC8', '#A0C49D', '#C1D0B5'];
+                        const colorIndex = Math.abs(hashCode(att.email || '')) % colors.length;
+                        const bgColor = colors[colorIndex];
+                        const statusText = att.responseStatus === 'accepted' ? 'Zusage' : att.responseStatus === 'declined' ? 'Absage' : 'Ausstehend';
+                        const title = `${name} (${statusText})`;
+                        return `<div class="attendee-avatar" style="background-color: ${bgColor}" title="${title}">${initial}</div>`;
+                    }).join('');
+                    
+                    const plusCount = evt.attendees.length > maxAvatars ? `<div class="attendee-avatar-more">+${evt.attendees.length - maxAvatars}</div>` : '';
+                    
+                    attendeesHtml = `
+                        <div class="timeline-attendees-list">
+                            ${avatarItems}
+                            ${plusCount}
+                        </div>
+                    `;
+                }
+
+                let meetHtml = '';
+                if (evt.hangoutLink) {
+                    meetHtml = `
+                        <a href="${evt.hangoutLink}" target="_blank" rel="noopener noreferrer" class="video-call-btn" title="An Google Meet teilnehmen">
+                            <span class="material-symbols-outlined">video_camera_back</span>
+                        </a>
+                    `;
+                }
+
+                footerHtml = `
+                    <div class="timeline-card-footer">
+                        ${attendeesHtml}
+                        ${meetHtml}
+                    </div>
+                `;
+            }
+
+            card.innerHTML = `
+                <div class="timeline-card-header" ${sourceStyle}>
+                    <div class="timeline-card-header-main">
+                        <h3 class="timeline-card-title">${evt.title}</h3>
+                        <span class="${timeClass}">${evt.timeStr}</span>
+                    </div>
+                    <span class="event-source ${evt.sourceClass}">${evt.source}</span>
                 </div>
+                <div class="timeline-card-body">
+                    ${descriptionHtml}
+                    ${locationHtml}
+                    ${organizerHtml}
+                </div>
+                ${footerHtml}
             `;
-            eventsContainer.appendChild(eventEl);
+            
+            cardCol.appendChild(card);
+            eventRow.appendChild(cardCol);
+            eventsContainer.appendChild(eventRow);
         });
 
         dayEl.appendChild(eventsContainer);
@@ -1274,6 +1483,12 @@ if (typeof window !== 'undefined') {
     window.initTheme = initTheme;
     window.toggleTheme = toggleTheme;
     window.updateAvatar = updateAvatar;
+    window.hashCode = hashCode;
+    window.getWelcomeMessage = getWelcomeMessage;
+    window.getWeeklyDays = getWeeklyDays;
+    window.renderWeeklyHeader = renderWeeklyHeader;
+    window.updateSettingsAvatarPreview = updateSettingsAvatarPreview;
+    window.initProfileSettingsListeners = initProfileSettingsListeners;
 }
 
 // ========== AUTHENTICATION LOGIC ==========
@@ -1282,8 +1497,66 @@ let supabaseClient = null;
 let currentUser = null;
 
 let currentUserSettings = {
-    hidden_calendars: []
+    hidden_calendars: [],
+    username: '',
+    avatar_url: ''
 };
+
+function updateSettingsAvatarPreview() {
+    const previewImg = document.getElementById('settings-avatar-img');
+    const placeholder = document.getElementById('settings-avatar-placeholder');
+    const removeBtn = document.getElementById('btn-remove-avatar');
+    
+    const avatarUrl = currentUserSettings.avatar_url || currentUser?.user_metadata?.avatar_url || currentUser?.user_metadata?.picture;
+    if (avatarUrl && previewImg && placeholder) {
+        previewImg.src = avatarUrl;
+        previewImg.style.display = 'block';
+        placeholder.style.display = 'none';
+        if (removeBtn && currentUserSettings.avatar_url) {
+            removeBtn.style.display = 'inline-block';
+        } else if (removeBtn) {
+            removeBtn.style.display = 'none';
+        }
+    } else if (previewImg && placeholder) {
+        previewImg.src = '';
+        previewImg.style.display = 'none';
+        placeholder.style.display = 'block';
+        if (removeBtn) removeBtn.style.display = 'none';
+    }
+}
+
+function initProfileSettingsListeners() {
+    const avatarInput = document.getElementById('settings-avatar-file');
+    const removeBtn = document.getElementById('btn-remove-avatar');
+    
+    if (avatarInput) {
+        avatarInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            if (file.size > 256 * 1024) {
+                alert("Bitte wähle ein Bild unter 256 KB aus.");
+                avatarInput.value = '';
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                currentUserSettings.avatar_url = evt.target.result;
+                updateSettingsAvatarPreview();
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+    
+    if (removeBtn) {
+        removeBtn.addEventListener('click', () => {
+            currentUserSettings.avatar_url = '';
+            if (avatarInput) avatarInput.value = '';
+            updateSettingsAvatarPreview();
+        });
+    }
+}
 
 async function loadUserSettings() {
     const client = getSupabaseClient();
@@ -1322,6 +1595,14 @@ async function loadUserSettings() {
                 currentUserSettings.hidden_calendars = [];
             }
         }
+        
+        // Populate inputs in UI
+        const usernameInput = document.getElementById('settings-username');
+        if (usernameInput) {
+            usernameInput.value = currentUserSettings.username || '';
+        }
+        updateSettingsAvatarPreview();
+        updateAvatar();
     } catch (e) {
         console.error('Failed to load user settings from Supabase', e);
         // Fallback to local storage on error
@@ -1335,7 +1616,7 @@ async function loadUserSettings() {
 }
 
 function updateAvatar() {
-    const avatarUrl = currentUser?.user_metadata?.avatar_url || currentUser?.user_metadata?.picture;
+    const avatarUrl = currentUserSettings.avatar_url || currentUser?.user_metadata?.avatar_url || currentUser?.user_metadata?.picture;
     const avatars = document.querySelectorAll('.avatar');
     avatars.forEach(avatar => {
         if (avatarUrl) {
@@ -1363,6 +1644,11 @@ async function saveAllUserSettings() {
     const saveBtn = document.getElementById('btn-save-settings');
     const statusText = document.getElementById('settings-save-status');
 
+    const usernameInput = document.getElementById('settings-username');
+    if (usernameInput) {
+        currentUserSettings.username = usernameInput.value.trim();
+    }
+
     if (saveBtn) saveBtn.disabled = true;
     if (statusText) {
         statusText.textContent = "Wird gespeichert...";
@@ -1382,6 +1668,9 @@ async function saveAllUserSettings() {
                 });
             if (error) throw error;
 
+            updateAvatar();
+            renderTimelineEvents();
+
             if (statusText) {
                 statusText.textContent = "Einstellungen in Cloud gespeichert";
                 setTimeout(() => {
@@ -1396,6 +1685,8 @@ async function saveAllUserSettings() {
             }
         }
     } else {
+        updateAvatar();
+        renderTimelineEvents();
         if (statusText) {
             statusText.textContent = "Lokal gespeichert (nicht angemeldet)";
             setTimeout(() => {
@@ -1926,6 +2217,7 @@ const startApp = async () => {
     initPullToRefresh();
     await loadConfigScript();
     initAuth();
+    initProfileSettingsListeners();
 
     const saveSettingsBtn = document.getElementById('btn-save-settings');
     if (saveSettingsBtn) {

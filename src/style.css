@@ -1935,6 +1935,7 @@ body.auth-locked .screen-content {
     display: flex;
     flex-direction: column;
     gap: var(--space-lg);
+    width: 100%;
 }
 
 .timeline-empty-state {
@@ -1994,6 +1995,437 @@ body.auth-locked .screen-content {
 }
 .timeline-error-banner button:hover {
     background: #ff7733;
+}
+
+/* Redesigned Timeline Screen */
+
+.timeline-header-wrapper {
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-lg) var(--space-xl);
+    background: var(--bg-primary);
+    border-bottom: 1px solid var(--border-color);
+    gap: var(--space-md);
+}
+
+.timeline-header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.timeline-header-date {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.timeline-header-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.timeline-header-welcome-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    width: 100%;
+    margin-top: -4px;
+}
+
+.timeline-welcome {
+    font-family: 'Outfit', sans-serif;
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.timeline-today-label {
+    font-family: 'Outfit', sans-serif;
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+
+/* Weekly calendar strip */
+.timeline-weekly-strip {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    margin-top: var(--space-sm);
+}
+
+.weekly-day-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: var(--space-xs) 0;
+    width: calc(100% / 7 - 6px);
+    border-radius: var(--radius-md);
+    cursor: default;
+    transition: all var(--transition-normal);
+}
+
+.weekly-day-name {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.weekly-day-number {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+/* Selected/Active Day in Strip */
+.weekly-day-item.active {
+    background: rgba(90, 111, 82, 0.15); /* Sage green light background tint */
+}
+.weekly-day-item.active .weekly-day-name {
+    color: #5A6F52; /* Orga Sage green */
+    font-weight: 600;
+}
+.weekly-day-item.active .weekly-day-number {
+    color: #5A6F52;
+    position: relative;
+}
+/* dot under number in mockup */
+.weekly-day-item.active .weekly-day-number::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    background: #5A6F52;
+    border-radius: 50%;
+}
+
+/* Timeline Layout */
+.timeline-screen-content {
+    padding-top: var(--space-md) !important;
+}
+
+.timeline-spinner-row {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-sm);
+    padding-right: var(--space-xl);
+}
+
+.timeline-layout {
+    display: flex;
+    position: relative;
+    padding-left: var(--space-xl);
+    padding-right: var(--space-xl);
+    width: 100%;
+}
+
+/* The vertical axis container */
+.timeline-axis {
+    display: none; /* We hide the standalone axis since we use row layout now */
+}
+
+/* Row Layout */
+.timeline-events {
+    display: flex;
+    flex-direction: column;
+    gap: 0; /* Let line segment connect */
+    width: 100%;
+}
+
+.timeline-event-row {
+    display: flex;
+    position: relative;
+    width: 100%;
+    min-height: 90px;
+}
+
+/* Axis column in row */
+.timeline-axis-col {
+    width: 40px;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* dot/node */
+.timeline-axis-dot {
+    width: 12px;
+    height: 12px;
+    border: 2px solid #5A6F52;
+    background: var(--bg-primary);
+    border-radius: 50%;
+    position: absolute;
+    top: 24px;
+    z-index: 2;
+    transition: all var(--transition-normal);
+}
+
+/* active dot with filled circle */
+.timeline-axis-dot.active-dot {
+    background: #5A6F52;
+    box-shadow: 0 0 0 3px rgba(90, 111, 82, 0.3);
+}
+
+/* line segment connecting dots */
+.timeline-axis-line-segment {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    background: var(--border-color);
+    z-index: 1;
+}
+
+/* Hide first line segment top and last line segment bottom to look clean */
+.timeline-event-row:first-child .timeline-axis-line-segment {
+    top: 24px;
+}
+.timeline-event-row:last-child .timeline-axis-line-segment {
+    bottom: calc(100% - 24px);
+}
+
+/* Card column */
+.timeline-event-card-col {
+    flex-grow: 1;
+    padding-bottom: var(--space-lg);
+}
+
+/* The Card styling */
+.timeline-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    transition: all var(--transition-normal);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.timeline-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.timeline-card-header {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    padding-left: var(--space-xs);
+}
+
+.timeline-card-header-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--space-sm);
+}
+
+.timeline-card-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.timeline-card-header .event-time {
+    min-width: unset;
+    text-align: right;
+    white-space: nowrap;
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+
+.timeline-card-header .event-source {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.timeline-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+}
+
+.timeline-card-description {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+    margin: 0;
+}
+
+.timeline-card-meta-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+
+.timeline-card-meta-row .font-icon {
+    font-size: 16px;
+    color: var(--text-muted);
+}
+
+/* Footer (Attendees & Meet button) */
+.timeline-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--border-color);
+    padding-top: var(--space-sm);
+    margin-top: var(--space-xs);
+}
+
+/* Attendees list overlap avatar row */
+.timeline-attendees-list {
+    display: flex;
+    align-items: center;
+    padding-left: 6px;
+}
+
+.attendee-avatar {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    border: 2px solid var(--bg-secondary);
+    margin-left: -6px;
+    cursor: default;
+    transition: transform var(--transition-fast);
+}
+
+.attendee-avatar:hover {
+    transform: scale(1.15) translateY(-2px);
+    z-index: 10;
+}
+
+.attendee-avatar-more {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--border-strong);
+    color: var(--text-secondary);
+    font-size: 10px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--bg-secondary);
+    margin-left: -6px;
+}
+
+/* Video Meet button */
+.video-call-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-md);
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    color: #5A6F52;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    text-decoration: none;
+}
+
+.video-call-btn:hover {
+    background: #5A6F52;
+    color: #ffffff;
+    border-color: #5A6F52;
+}
+
+/* Active Event highlight card state */
+.timeline-card.active-card {
+    background: #5A6F52; /* Brand Sage Green */
+    border-color: #5A6F52;
+    color: #ffffff;
+}
+
+.timeline-card.active-card .timeline-card-title,
+.timeline-card.active-card .timeline-card-description,
+.timeline-card.active-card .timeline-card-meta-row,
+.timeline-card.active-card .timeline-card-meta-row .font-icon,
+.timeline-card.active-card .timeline-card-header .event-time,
+.timeline-card.active-card .timeline-card-header .event-source {
+    color: rgba(255, 255, 255, 0.95);
+}
+
+.timeline-card.active-card .timeline-card-footer {
+    border-top-color: rgba(255, 255, 255, 0.2);
+}
+
+.timeline-card.active-card .attendee-avatar {
+    border-color: #5A6F52;
+}
+
+.timeline-card.active-card .video-call-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: transparent;
+    color: #ffffff;
+}
+
+.timeline-card.active-card .video-call-btn:hover {
+    background: rgba(255, 255, 255, 0.35);
+}
+
+/* Dark Mode Theme overrides */
+[data-theme="dark"] .weekly-day-item.active {
+    background: rgba(122, 154, 96, 0.2);
+}
+[data-theme="dark"] .weekly-day-item.active .weekly-day-name,
+[data-theme="dark"] .weekly-day-item.active .weekly-day-number {
+    color: #A2B997;
+}
+[data-theme="dark"] .weekly-day-item.active .weekly-day-number::after {
+    background: #A2B997;
+}
+
+[data-theme="dark"] .timeline-axis-dot {
+    border-color: #A2B997;
+}
+[data-theme="dark"] .timeline-axis-dot.active-dot {
+    background: #A2B997;
+    box-shadow: 0 0 0 3px rgba(162, 185, 151, 0.3);
+}
+
+[data-theme="dark"] .video-call-btn {
+    color: #A2B997;
+}
+[data-theme="dark"] .video-call-btn:hover {
+    background: #A2B997;
+    color: #121212;
+    border-color: #A2B997;
+}
+
+[data-theme="dark"] .timeline-card.active-card {
+    background: #3A4D39; /* Darker sage green for dark mode contrast */
+    border-color: #3A4D39;
+}
+[data-theme="dark"] .timeline-card.active-card .attendee-avatar {
+    border-color: #3A4D39;
 }
 
 
