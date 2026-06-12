@@ -798,6 +798,78 @@ async function linkGoogleAccount() {
     }
 }
 
+async function renderGoogleCalendarList(providerToken) {
+    const container = document.getElementById('google-calendar-list-container');
+    if (!container) return;
+
+    if (!providerToken) {
+        container.innerHTML = '';
+        return;
+    }
+
+    try {
+        const calendars = await fetchGoogleCalendarList(providerToken);
+        const hiddenCalendarsStr = localStorage.getItem('nexus-hidden-calendars');
+        let hiddenCalendars = [];
+        try {
+            hiddenCalendars = hiddenCalendarsStr ? JSON.parse(hiddenCalendarsStr) : [];
+        } catch (e) {
+            hiddenCalendars = [];
+        }
+
+        container.innerHTML = '';
+        calendars.forEach(cal => {
+            const isHidden = hiddenCalendars.includes(cal.id);
+            const wrapper = document.createElement('label');
+            wrapper.style.display = 'flex';
+            wrapper.style.alignItems = 'center';
+            wrapper.style.gap = '8px';
+            wrapper.style.cursor = 'pointer';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = !isHidden;
+            checkbox.dataset.calendarId = cal.id;
+
+            checkbox.addEventListener('change', (e) => {
+                const id = e.target.dataset.calendarId;
+                let currentHidden = [];
+                try {
+                    const str = localStorage.getItem('nexus-hidden-calendars');
+                    currentHidden = str ? JSON.parse(str) : [];
+                } catch (err) {}
+
+                if (e.target.checked) {
+                    currentHidden = currentHidden.filter(cid => cid !== id);
+                } else {
+                    if (!currentHidden.includes(id)) {
+                        currentHidden.push(id);
+                    }
+                }
+                localStorage.setItem('nexus-hidden-calendars', JSON.stringify(currentHidden));
+                renderTimelineEvents(true);
+            });
+
+            const colorSpan = document.createElement('span');
+            colorSpan.style.width = '12px';
+            colorSpan.style.height = '12px';
+            colorSpan.style.borderRadius = '50%';
+            colorSpan.style.backgroundColor = cal.backgroundColor || '#ccc';
+
+            const labelText = document.createElement('span');
+            labelText.textContent = cal.summary;
+
+            wrapper.appendChild(checkbox);
+            wrapper.appendChild(colorSpan);
+            wrapper.appendChild(labelText);
+            container.appendChild(wrapper);
+        });
+    } catch (e) {
+        console.error('Failed to load Google Calendar list', e);
+        container.innerHTML = '<span style="color: red;">Fehler beim Laden der Kalender</span>';
+    }
+}
+
 async function updateGoogleCalendarStatus() {
     const statusContainer = document.getElementById('google-calendar-status');
     if (!statusContainer) return;
@@ -826,6 +898,7 @@ async function updateGoogleCalendarStatus() {
                 renderTimelineEvents();
             });
         }
+        renderGoogleCalendarList(session.provider_token);
     } else {
         statusContainer.innerHTML = `
             <button type="button" id="btn-link-google" class="btn-link-google btn-text">Verknüpfen</button>
@@ -833,6 +906,10 @@ async function updateGoogleCalendarStatus() {
         const linkBtn = document.getElementById('btn-link-google');
         if (linkBtn) {
             linkBtn.addEventListener('click', linkGoogleAccount);
+        }
+        const listContainer = document.getElementById('google-calendar-list-container');
+        if (listContainer) {
+            listContainer.innerHTML = '';
         }
     }
 }
@@ -948,9 +1025,18 @@ async function fetchGoogleCalendarEvents(providerToken) {
     const timeMax = twoWeeksLater.toISOString();
 
     // 2. Fetch events from all selected calendars in parallel
+    const hiddenCalendarsStr = localStorage.getItem('nexus-hidden-calendars');
+    let hiddenCalendars = [];
+    try {
+        hiddenCalendars = hiddenCalendarsStr ? JSON.parse(hiddenCalendarsStr) : [];
+    } catch (e) {
+        hiddenCalendars = [];
+    }
+
     const fetchPromises = calendars.map(async (cal) => {
         // Skip hidden/unselected calendars
         if (cal.selected === false) return [];
+        if (hiddenCalendars.includes(cal.id)) return [];
 
         const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(cal.id)}/events?timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}&singleEvents=true&orderBy=startTime`;
         
