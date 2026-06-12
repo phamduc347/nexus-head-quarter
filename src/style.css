@@ -1153,6 +1153,29 @@ input {
     z-index: 1000;
 }
 
+/* Floating drag state */
+.widget-wrapper.dragging-floating {
+    opacity: 0.95;
+    transform: scale(1.02);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+    z-index: 1000;
+    pointer-events: none !important;
+    transition: none !important;
+}
+
+.widget-wrapper.dragging-floating * {
+    pointer-events: none !important;
+}
+
+/* Drag drop area placeholder */
+.widget-placeholder {
+    border: 2px dashed var(--accent-blue);
+    background: rgba(59, 130, 246, 0.05);
+    border-radius: var(--radius-lg);
+    box-sizing: border-box;
+    pointer-events: none;
+}
+
 /* Edit Mode styling */
 .edit-active .widget-wrapper {
     border: 2px dashed var(--accent-blue);
@@ -1207,6 +1230,7 @@ input {
 .drag-handle {
     background: var(--accent-blue);
     cursor: grab;
+    touch-action: none;
 }
 
 .drag-handle:active {

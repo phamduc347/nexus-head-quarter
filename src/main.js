@@ -246,6 +246,10 @@ function initEditMode(container) {
 let dragElement = null;
 
 function setupDragAndDrop(container) {
+    let placeholder = null;
+    let startX = 0;
+    let startY = 0;
+
     container.addEventListener('pointerdown', (e) => {
         // Only trigger dragging if handle was clicked
         const handle = e.target.closest('.drag-handle');
@@ -257,58 +261,120 @@ function setupDragAndDrop(container) {
         e.preventDefault();
         dragElement = wrapper;
         
-        // Visual dragging feedback
-        wrapper.classList.add('dragging');
-        wrapper.setPointerCapture(e.pointerId);
+        startX = e.clientX;
+        startY = e.clientY;
+        
+        const rect = wrapper.getBoundingClientRect();
+        
+        // Create placeholder to occupy the empty slot in the grid
+        placeholder = document.createElement('div');
+        placeholder.className = 'widget-placeholder';
+        placeholder.style.height = rect.height + 'px';
+        placeholder.style.width = rect.width + 'px';
+        
+        // Copy margin & border radius for layout consistency
+        const computedStyle = window.getComputedStyle ? window.getComputedStyle(wrapper) : null;
+        if (computedStyle) {
+            placeholder.style.marginBottom = computedStyle.marginBottom;
+            placeholder.style.borderRadius = computedStyle.borderRadius;
+        }
+        
+        // Transform the dragged widget into a floating element
+        wrapper.style.width = rect.width + 'px';
+        wrapper.style.height = rect.height + 'px';
+        wrapper.style.left = rect.left + 'px';
+        wrapper.style.top = rect.top + 'px';
+        wrapper.style.position = 'fixed';
+        wrapper.style.zIndex = '1000';
+        wrapper.style.pointerEvents = 'none';
+        wrapper.style.margin = '0';
+        wrapper.classList.add('dragging-floating');
+
+        // Insert placeholder exactly where the widget wrapper was
+        wrapper.parentNode.insertBefore(placeholder, wrapper);
+        
+        // Add viewport-wide tracking listeners
+        document.addEventListener('pointermove', onPointerMove);
+        document.addEventListener('pointerup', onPointerUp);
+        document.addEventListener('pointercancel', onPointerUp);
     });
 
-    container.addEventListener('pointermove', (e) => {
+    function onPointerMove(e) {
         if (!dragElement) return;
+        
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        dragElement.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
 
-        e.preventDefault();
-        
-        const x = e.clientX;
-        const y = e.clientY;
-        
-        // Find all sibling wrappers (exclude the currently dragged one)
-        const items = [...container.querySelectorAll('.widget-wrapper:not(.dragging)')];
-        
-        // Find which sibling wrapper is underneath the current pointer location
-        const nextSibling = items.find(item => {
-            const rect = item.getBoundingClientRect();
-            return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
-        });
+        // Find what element is currently under the cursor
+        const hitElement = document.elementFromPoint(e.clientX, e.clientY);
+        if (!hitElement) return;
 
-        if (nextSibling) {
-            const rect = nextSibling.getBoundingClientRect();
-            const midpointY = rect.top + rect.height / 2;
-            const midpointX = rect.left + rect.width / 2;
-            
-            // Check direction of movement to place item before or after
-            const isAfter = (y > midpointY) || (x > midpointX && y > rect.top);
-            
+        const targetWidget = hitElement.closest('.widget-wrapper');
+        const addBtn = hitElement.closest('#add-widget-btn');
+
+        if (targetWidget && targetWidget !== dragElement) {
+            const targetRect = targetWidget.getBoundingClientRect();
+            const isAfter = e.clientY > targetRect.top + targetRect.height / 2;
             if (isAfter) {
-                container.insertBefore(dragElement, nextSibling.nextSibling);
+                container.insertBefore(placeholder, targetWidget.nextSibling);
             } else {
-                container.insertBefore(dragElement, nextSibling);
+                container.insertBefore(placeholder, targetWidget);
+            }
+        } else if (addBtn) {
+            // Position right after the add widget button at the top
+            container.insertBefore(placeholder, addBtn.nextSibling);
+        } else {
+            // Fallback: Check if pointer is above the first widget or below the last widget
+            const items = [...container.querySelectorAll('.widget-wrapper:not(.dragging-floating)')];
+            if (items.length > 0) {
+                const firstRect = items[0].getBoundingClientRect();
+                const lastRect = items[items.length - 1].getBoundingClientRect();
+                
+                if (e.clientY < firstRect.top) {
+                    const addBtnEl = document.getElementById('add-widget-btn');
+                    if (addBtnEl) {
+                        container.insertBefore(placeholder, addBtnEl.nextSibling);
+                    } else {
+                        container.prepend(placeholder);
+                    }
+                } else if (e.clientY > lastRect.bottom) {
+                    container.appendChild(placeholder);
+                }
             }
         }
-    });
+    }
 
-    const endDrag = (e) => {
+    function onPointerUp(e) {
+        document.removeEventListener('pointermove', onPointerMove);
+        document.removeEventListener('pointerup', onPointerUp);
+        document.removeEventListener('pointercancel', onPointerUp);
+
         if (!dragElement) return;
-        
-        dragElement.classList.remove('dragging');
-        try {
-            dragElement.releasePointerCapture(e.pointerId);
-        } catch (err) {}
-        dragElement = null;
-        
-        saveLayout();
-    };
 
-    container.addEventListener('pointerup', endDrag);
-    container.addEventListener('pointercancel', endDrag);
+        // Reset all floating styles
+        dragElement.classList.remove('dragging-floating');
+        dragElement.style.width = '';
+        dragElement.style.height = '';
+        dragElement.style.left = '';
+        dragElement.style.top = '';
+        dragElement.style.position = '';
+        dragElement.style.zIndex = '';
+        dragElement.style.pointerEvents = '';
+        dragElement.style.margin = '';
+        dragElement.style.transform = '';
+
+        // Drop the widget back into the placeholder position
+        if (placeholder && placeholder.parentNode) {
+            placeholder.parentNode.insertBefore(dragElement, placeholder);
+            placeholder.remove();
+        }
+
+        dragElement = null;
+        placeholder = null;
+
+        saveLayout();
+    }
 }
 
 /**
