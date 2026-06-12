@@ -637,7 +637,7 @@ async function fetchWeather(weatherEl) {
                 forecastHourEl.innerHTML = `
                     <span class="forecast-name">${hourString}</span>
                     <div class="forecast-icon-placeholder" style="border: none; background: transparent; display: flex; align-items: center; justify-content: center;">
-                        <span class="material-symbols-outlined" style="font-size: 24px; color: #ffffff;">${weatherInfo.icon}</span>
+                        <span class="material-symbols-outlined forecast-hour-icon">${weatherInfo.icon}</span>
                     </div>
                     <span class="forecast-temps">${temp}°</span>
                 `;

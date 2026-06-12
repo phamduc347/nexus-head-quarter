@@ -103,7 +103,7 @@
             <div class="screen-content">
                 <!-- Welcome Message -->
                 <div class="home-welcome-container" style="margin-bottom: var(--space-lg); padding: 0 var(--space-xs);">
-                    <h2 class="home-welcome" id="home-welcome-msg" style="font-family: 'Outfit', sans-serif; font-size: 26px; font-weight: 800; color: var(--text-primary); margin: 0;">Willkommen</h2>
+                    <h2 class="home-welcome" id="home-welcome-msg">Willkommen</h2>
                 </div>
 
                 <!-- Dashboard Widget Grid -->
@@ -126,7 +126,7 @@
                     </div>
                 </div>
                 <div class="timeline-header-welcome-row">
-                    <span class="timeline-today-label" style="margin: 0; font-family: 'Outfit', sans-serif; font-size: 26px; font-weight: 800; color: var(--text-primary);">Heute</span>
+                    <span class="timeline-today-label">Heute</span>
                 </div>
                 
                 <!-- Weekly Calendar strip -->
@@ -152,8 +152,7 @@
 
         <!-- ========== SCREEN: SETTINGS ========== -->
         <div class="screen" id="screen-settings">
-            <header class="app-header">
-                <h1 class="header-title">Einstellungen & Integrationen</h1>
+            <header class="app-header" style="justify-content: flex-end;">
                 <button class="btn-icon theme-toggle-btn" aria-label="Design umschalten">
                     <span class="material-symbols-outlined">dark_mode</span>
                 </button>
@@ -161,6 +160,10 @@
             </header>
 
             <div class="screen-content">
+                <!-- Welcome/Title Message -->
+                <div class="settings-title-container" style="margin-bottom: var(--space-lg); padding: 0 var(--space-xs);">
+                    <h2 class="settings-title">Einstellungen & Integrationen</h2>
+                </div>
                 <!-- Account Section -->
                 <section class="widget widget-account" aria-label="Benutzerkonto">
                     <div class="widget-header">
@@ -185,12 +188,12 @@
                                 <label for="settings-avatar-file">Profilbild (optional)</label>
                                 <div style="display: flex; align-items: center; gap: 12px;">
                                     <div class="avatar-preview-wrapper" style="width: 48px; height: 48px; border-radius: 50%; background: var(--bg-secondary); border: 1px solid var(--border-color); overflow: hidden; display: flex; align-items: center; justify-content: center; flex-shrink: 0; position: relative;">
-                                        <span class="material-symbols-outlined" id="settings-avatar-placeholder" style="font-size: 24px; color: var(--text-muted);">person</span>
+                                        <span class="material-symbols-outlined" id="settings-avatar-placeholder">person</span>
                                         <img id="settings-avatar-img" src="" alt="Vorschau" style="width: 100%; height: 100%; display: none; object-fit: cover;">
                                     </div>
                                     <div style="flex-grow: 1;">
-                                        <input type="file" id="settings-avatar-file" accept="image/*" style="font-size: 13px; width: 100%;">
-                                        <button type="button" id="btn-remove-avatar" class="btn-text-danger" style="font-size: 11px; margin-top: 4px; display: none; padding: 0; background: none; border: none; cursor: pointer;">Profilbild entfernen</button>
+                                        <input type="file" id="settings-avatar-file" accept="image/*">
+                                        <button type="button" id="btn-remove-avatar" class="btn-text-danger">Profilbild entfernen</button>
                                     </div>
                                 </div>
                             </div>
@@ -219,9 +222,9 @@
 
                 <!-- Save Settings Actions -->
                 <div class="settings-actions" style="margin-top: 24px; display: flex; gap: 12px; justify-content: flex-end; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 24px;">
-                    <span id="settings-save-status" style="font-size: 14px; color: #a0aec0; display: none;"></span>
+                    <span id="settings-save-status"></span>
                     <button id="btn-save-settings" class="btn-primary" type="button" style="display: flex; align-items: center; gap: 8px;">
-                        <span class="material-symbols-outlined" style="font-size: 20px;">save</span>
+                        <span class="material-symbols-outlined btn-save-icon">save</span>
                         <span>Einstellungen speichern</span>
                     </button>
                 </div>
@@ -245,10 +248,6 @@
             <button class="nav-item" data-screen="screen-timeline" aria-label="Timeline">
                 <span class="material-symbols-outlined">schedule</span>
                 <span class="nav-label">Timeline</span>
-            </button>
-            <button class="nav-item" data-screen="screen-search" aria-label="Suche">
-                <span class="material-symbols-outlined">search</span>
-                <span class="nav-label">Suche</span>
             </button>
             <button class="nav-item" data-screen="screen-settings" aria-label="Einstellungen">
                 <span class="material-symbols-outlined">settings</span>
@@ -443,10 +442,10 @@
             </button>
         </div>
         <div class="dialog-body">
-            <p style="margin-bottom: var(--space-md); font-size: 14px; color: var(--text-secondary); line-height: 1.5;">Möchtest du dich wirklich von Pham's Nexus Hub abmelden?</p>
+            <p class="confirm-dialog-text">Möchtest du dich wirklich von Pham's Nexus Hub abmelden?</p>
             <div class="dialog-actions" style="display: flex; gap: var(--space-sm); justify-content: flex-end; margin-top: var(--space-md);">
                 <button type="button" id="btn-cancel-logout" class="btn-secondary">Abbrechen</button>
-                <button type="button" id="btn-confirm-logout" class="btn-danger" style="background: #e63946; color: #ffffff; border: none; border-radius: var(--radius-md); padding: var(--space-xs) var(--space-md); cursor: pointer; font-weight: 500; font-size: 13px;">Ja, abmelden</button>
+                <button type="button" id="btn-confirm-logout" class="btn-danger">Ja, abmelden</button>
             </div>
         </div>
     </dialog>
