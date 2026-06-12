@@ -1507,9 +1507,123 @@ function loadConfigScript() {
     });
 }
 
+/**
+ * Pull to Refresh for Mobile Devices
+ */
+function initPullToRefresh() {
+    const screenContent = document.querySelector('#screen-home .screen-content');
+    if (!screenContent) return;
+
+    // Create the pull-to-refresh container dynamically
+    const ptrContainer = document.createElement('div');
+    ptrContainer.className = 'ptr-container';
+    ptrContainer.innerHTML = `
+        <span class="material-symbols-outlined ptr-icon">arrow_downward</span>
+        <span class="ptr-text">Zum Aktualisieren ziehen</span>
+    `;
+    screenContent.insertBefore(ptrContainer, screenContent.firstChild);
+
+    let startY = 0;
+    let currentY = 0;
+    let pulling = false;
+    const threshold = 80; // px
+    const maxPull = 120; // px
+
+    screenContent.addEventListener('touchstart', (e) => {
+        // Only start pulling if scrolled to the top
+        if (screenContent.scrollTop === 0) {
+            startY = e.touches[0].pageY;
+            pulling = true;
+            ptrContainer.classList.remove('resetting', 'ready', 'loading');
+        }
+    }, { passive: true });
+
+    screenContent.addEventListener('touchmove', (e) => {
+        if (!pulling) return;
+
+        currentY = e.touches[0].pageY;
+        const diff = currentY - startY;
+
+        if (diff > 0 && screenContent.scrollTop === 0) {
+            // Prevent native bounce scroll / standard pull-to-refresh if possible
+            if (e.cancelable) {
+                e.preventDefault();
+            }
+
+            // Apply resistance formula so pulling feels elastic/tactile
+            const pullDistance = Math.min(diff * 0.5, maxPull);
+            
+            ptrContainer.style.height = `${pullDistance}px`;
+            ptrContainer.style.opacity = Math.min(pullDistance / threshold, 1);
+
+            // Rotate the arrow icon as user pulls
+            const icon = ptrContainer.querySelector('.ptr-icon');
+            if (icon) {
+                const rotation = Math.min((pullDistance / threshold) * 180, 180);
+                icon.style.transform = `rotate(${rotation}deg)`;
+            }
+
+            if (pullDistance >= threshold) {
+                ptrContainer.classList.add('ready');
+                ptrContainer.querySelector('.ptr-text').textContent = 'Zum Aktualisieren loslassen';
+            } else {
+                ptrContainer.classList.remove('ready');
+                ptrContainer.querySelector('.ptr-text').textContent = 'Zum Aktualisieren ziehen';
+            }
+        } else {
+            // If user scrolls up, reset pulling state
+            pulling = false;
+            resetPTR();
+        }
+    }, { passive: false });
+
+    screenContent.addEventListener('touchend', () => {
+        if (!pulling) return;
+        pulling = false;
+
+        const diff = currentY - startY;
+        const pullDistance = Math.min(diff * 0.5, maxPull);
+
+        if (pullDistance >= threshold) {
+            // Trigger refresh
+            ptrContainer.classList.add('loading');
+            ptrContainer.classList.remove('ready');
+            ptrContainer.querySelector('.ptr-text').textContent = 'Lade neu...';
+            ptrContainer.style.height = '60px';
+            ptrContainer.style.opacity = '1';
+
+            // Brief delay for visual feedback, then reload page
+            setTimeout(() => {
+                window.location.reload();
+            }, 500);
+        } else {
+            resetPTR();
+        }
+    });
+
+    screenContent.addEventListener('touchcancel', () => {
+        pulling = false;
+        resetPTR();
+    });
+
+    function resetPTR() {
+        ptrContainer.classList.add('resetting');
+        ptrContainer.style.height = '0px';
+        ptrContainer.style.opacity = '0';
+        const icon = ptrContainer.querySelector('.ptr-icon');
+        if (icon) {
+            icon.style.transform = 'rotate(0deg)';
+        }
+        setTimeout(() => {
+            ptrContainer.classList.remove('resetting');
+        }, 300);
+    }
+}
+
 // Bootstrap execution
 const startApp = async () => {
     initNavigation();
+    initPullToRefresh();
     await loadConfigScript();
     initAuth();
 };
