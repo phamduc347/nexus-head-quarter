@@ -173,6 +173,7 @@ input {
     flex-shrink: 0;
     border-bottom: 1px solid var(--border-color);
     background: var(--bg-primary);
+    view-transition-name: app-header;
 }
 
 .header-title {
@@ -1006,6 +1007,7 @@ input {
     justify-content: space-around;
     padding-bottom: env(safe-area-inset-bottom, 0);
     z-index: 100;
+    view-transition-name: app-footer;
 }
 
 .nav-item {
@@ -1605,5 +1607,64 @@ body.auth-locked .screen-content {
 .hidden {
     display: none !important;
 }
+
+
+/* ===================================================================
+   VIEW TRANSITIONS
+   =================================================================== */
+
+/* Animation settings shared across transitions */
+::view-transition-group(root) {
+    animation-duration: 0.28s;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Slide to left / from right for forward navigation */
+.nav-forward::view-transition-old(root) {
+    animation-name: slide-to-left, fade-out;
+}
+.nav-forward::view-transition-new(root) {
+    animation-name: slide-from-right, fade-in;
+}
+
+/* Slide to right / from left for backward navigation */
+.nav-backward::view-transition-old(root) {
+    animation-name: slide-to-right, fade-out;
+}
+.nav-backward::view-transition-new(root) {
+    animation-name: slide-from-left, fade-in;
+}
+
+/* Keyframes for sliding and fading screen transitions */
+@keyframes fade-out {
+    to { opacity: 0; }
+}
+@keyframes fade-in {
+    from { opacity: 0; }
+}
+
+@keyframes slide-to-left {
+    to { transform: translateX(-30px); }
+}
+@keyframes slide-from-right {
+    from { transform: translateX(30px); }
+}
+
+@keyframes slide-to-right {
+    to { transform: translateX(30px); }
+}
+@keyframes slide-from-left {
+    from { transform: translateX(-30px); }
+}
+
+/* Respect user preferences for reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    ::view-transition-group(root),
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+        animation: none !important;
+    }
+}
+
 
 

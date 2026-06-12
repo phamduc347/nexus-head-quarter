@@ -17,17 +17,39 @@ function initNavigation() {
             const target = document.getElementById(targetId);
             if (!target) return;
 
-            // Deactivate all screens & nav items
-            screens.forEach((s) => s.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach((n) => n.classList.remove('active'));
+            // Find indexes to determine transition direction (left vs right)
+            const navItemsArray = Array.from(document.querySelectorAll('.nav-item[data-screen]'));
+            const activeItem = document.querySelector('.nav-item.active[data-screen]');
+            const activeIndex = activeItem ? navItemsArray.indexOf(activeItem) : 0;
+            const clickedIndex = navItemsArray.indexOf(item);
 
-            // Activate target
-            target.classList.add('active');
-            item.classList.add('active');
+            const updateDOM = () => {
+                // Deactivate all screens & nav items
+                screens.forEach((s) => s.classList.remove('active'));
+                document.querySelectorAll('.nav-item').forEach((n) => n.classList.remove('active'));
 
-            // Scroll content to top on screen switch
-            const content = target.querySelector('.screen-content');
-            if (content) content.scrollTop = 0;
+                // Activate target
+                target.classList.add('active');
+                item.classList.add('active');
+
+                // Scroll content to top on screen switch
+                const content = target.querySelector('.screen-content');
+                if (content) content.scrollTop = 0;
+            };
+
+            // Progressive enhancement: Fallback for browsers without View Transitions
+            if (!document.startViewTransition) {
+                updateDOM();
+                return;
+            }
+
+            const directionClass = clickedIndex > activeIndex ? 'nav-forward' : 'nav-backward';
+            document.documentElement.classList.add(directionClass);
+
+            const transition = document.startViewTransition(updateDOM);
+            transition.finished.finally(() => {
+                document.documentElement.classList.remove('nav-forward', 'nav-backward');
+            });
         });
     });
 }
@@ -473,40 +495,48 @@ function handleAuthStateChange(event, session) {
     const emailEl = document.getElementById('settings-user-email');
     currentUser = session ? session.user : null;
     
-    if (session) {
-        // User is logged in
-        document.body.classList.remove('auth-locked');
-        if (emailEl) emailEl.textContent = session.user.email;
-        
-        // Show home screen by default if we were locked
-        const activeScreen = document.querySelector('.screen.active');
-        if (!activeScreen || activeScreen.id === 'screen-auth') {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            const home = document.getElementById('screen-home');
-            if (home) home.classList.add('active');
+    const updateDOM = () => {
+        if (session) {
+            // User is logged in
+            document.body.classList.remove('auth-locked');
+            if (emailEl) emailEl.textContent = session.user.email;
             
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            const homeNav = document.querySelector('.nav-item[data-screen="screen-home"]');
-            if (homeNav) homeNav.classList.add('active');
+            // Show home screen by default if we were locked
+            const activeScreen = document.querySelector('.screen.active');
+            if (!activeScreen || activeScreen.id === 'screen-auth') {
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                const home = document.getElementById('screen-home');
+                if (home) home.classList.add('active');
+                
+                document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+                const homeNav = document.querySelector('.nav-item[data-screen="screen-home"]');
+                if (homeNav) homeNav.classList.add('active');
+            }
+
+            // Initialize widgets for user
+            initWidgets();
+        } else {
+            // User is logged out
+            document.body.classList.add('auth-locked');
+            
+            // Deactivate all screens and activate auth screen
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            const authScreen = document.getElementById('screen-auth');
+            if (authScreen) authScreen.classList.add('active');
+
+            showAuthCard('auth-login');
+            if (emailEl) emailEl.textContent = '';
+            
+            // Clear layout container to prevent residual visual data
+            const grid = document.getElementById('dashboard-grid');
+            if (grid) grid.innerHTML = '';
         }
+    };
 
-        // Initialize widgets for user
-        initWidgets();
+    if (!document.startViewTransition) {
+        updateDOM();
     } else {
-        // User is logged out
-        document.body.classList.add('auth-locked');
-        
-        // Deactivate all screens and activate auth screen
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        const authScreen = document.getElementById('screen-auth');
-        if (authScreen) authScreen.classList.add('active');
-
-        showAuthCard('auth-login');
-        if (emailEl) emailEl.textContent = '';
-        
-        // Clear layout container to prevent residual visual data
-        const grid = document.getElementById('dashboard-grid');
-        if (grid) grid.innerHTML = '';
+        document.startViewTransition(updateDOM);
     }
 }
 
