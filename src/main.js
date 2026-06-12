@@ -134,6 +134,16 @@ async function loadLayout(container) {
         }
     });
 
+    const weatherWidget = container.querySelector('.widget-weather');
+    if (weatherWidget) {
+        initWeatherWidget(weatherWidget);
+    }
+
+    const rssWidget = container.querySelector('.widget-rss');
+    if (rssWidget) {
+        initRSSWidget(rssWidget);
+    }
+
 }
 
 /**
@@ -442,13 +452,287 @@ function addWidget(type) {
     
     // Insert directly below the Add Button at the top of the widgets list
     const addBtn = document.getElementById('add-widget-btn');
+    let newWidget = null;
     if (addBtn) {
         container.insertBefore(clone, addBtn.nextSibling);
+        newWidget = addBtn.nextSibling;
     } else {
         container.prepend(clone);
+        newWidget = container.firstElementChild;
+    }
+
+    if (type === 'weather' && newWidget) {
+        const weatherEl = newWidget.querySelector('.widget-weather');
+        if (weatherEl) {
+            initWeatherWidget(weatherEl);
+        }
+    }
+
+    if (type === 'rss' && newWidget) {
+        const rssEl = newWidget.querySelector('.widget-rss');
+        if (rssEl) {
+            initRSSWidget(rssEl);
+        }
     }
 
     saveLayout();
+}
+
+/**
+ * Returns weather description and icon symbol for a given WMO code
+ */
+function getWeatherData(code) {
+    const mappings = {
+        0: { desc: 'Sonnig', icon: 'wb_sunny' },
+        1: { desc: 'Klar', icon: 'wb_sunny' },
+        2: { desc: 'Teils wolkig', icon: 'cloud_queue' },
+        3: { desc: 'Bedeckt', icon: 'cloud' },
+        45: { desc: 'Nebel', icon: 'foggy' },
+        48: { desc: 'Reifnebel', icon: 'foggy' },
+        51: { desc: 'Leichter Nieselregen', icon: 'rainy' },
+        53: { desc: 'Nieselregen', icon: 'rainy' },
+        55: { desc: 'Starker Nieselregen', icon: 'rainy' },
+        56: { desc: 'Leichter Frostniesel', icon: 'rainy' },
+        57: { desc: 'Starker Frostniesel', icon: 'rainy' },
+        61: { desc: 'Leichter Regen', icon: 'rainy' },
+        63: { desc: 'Regen', icon: 'rainy' },
+        65: { desc: 'Starker Regen', icon: 'rainy' },
+        66: { desc: 'Gefrierender Regen', icon: 'weather_snowy' },
+        67: { desc: 'Starker Gefrierregen', icon: 'weather_snowy' },
+        71: { desc: 'Schneefall', icon: 'weather_snowy' },
+        73: { desc: 'Mäßiger Schneefall', icon: 'weather_snowy' },
+        75: { desc: 'Starker Schneefall', icon: 'weather_snowy' },
+        77: { desc: 'Schneegriesel', icon: 'weather_snowy' },
+        80: { desc: 'Leichte Schauer', icon: 'rainy' },
+        81: { desc: 'Regenschauer', icon: 'rainy' },
+        82: { desc: 'Starke Schauer', icon: 'rainy' },
+        85: { desc: 'Schneeschauer', icon: 'weather_snowy' },
+        86: { desc: 'Starke Schneeschauer', icon: 'weather_snowy' },
+        95: { desc: 'Gewitter', icon: 'thunderstorm' },
+        96: { desc: 'Gewitter mit Hagel', icon: 'thunderstorm' },
+        99: { desc: 'Starkes Gewitter', icon: 'thunderstorm' }
+    };
+    return mappings[code] || { desc: 'Unbekannt', icon: 'help_outline' };
+}
+
+/**
+ * Fetches real weather data for Dresden and updates the DOM
+ */
+async function fetchWeather(weatherEl) {
+    const tempEl = weatherEl.querySelector('.weather-temp');
+    const descEl = weatherEl.querySelector('.weather-desc');
+    const rangeEl = weatherEl.querySelector('.weather-range');
+    const iconContainer = weatherEl.querySelector('.weather-icon-container');
+    const forecastContainer = weatherEl.querySelector('.weather-forecast');
+
+    try {
+        const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=51.0504&longitude=13.7373&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&hourly=temperature_2m,weather_code&timezone=Europe%2FBerlin');
+        if (!res.ok) throw new Error('API Error');
+        const data = await res.json();
+
+        // Update current weather
+        const currentTemp = Math.round(data.current.temperature_2m);
+        const currentWMO = data.current.weather_code;
+        const currentInfo = getWeatherData(currentWMO);
+
+        if (tempEl) tempEl.textContent = `${currentTemp}°`;
+        if (descEl) descEl.textContent = currentInfo.desc;
+        
+        // Find max/min temp of today (index 0 of daily)
+        const todayMax = Math.round(data.daily.temperature_2m_max[0]);
+        const todayMin = Math.round(data.daily.temperature_2m_min[0]);
+        if (rangeEl) rangeEl.textContent = `↑ ${todayMax}° ↓ ${todayMin}°`;
+
+        if (iconContainer) {
+            iconContainer.innerHTML = `<span class="material-symbols-outlined">${currentInfo.icon}</span>`;
+            // Remove dashed border when icon is active
+            iconContainer.style.border = 'none';
+            iconContainer.style.background = 'transparent';
+        }
+
+        // Find the closest hourly index to the current time
+        const nowMs = Date.now();
+        let closestIndex = 0;
+        let minDiff = Infinity;
+        if (data.hourly && data.hourly.time) {
+            for (let i = 0; i < data.hourly.time.length; i++) {
+                const diff = Math.abs(new Date(data.hourly.time[i]).getTime() - nowMs);
+                if (diff < minDiff) {
+                    minDiff = diff;
+                    closestIndex = i;
+                }
+            }
+        }
+
+        // Update forecast with the next 5 hours starting from closestIndex
+        if (forecastContainer && data.hourly && data.hourly.time) {
+            forecastContainer.innerHTML = '';
+            
+            for (let k = 0; k < 5; k++) {
+                const idx = closestIndex + k;
+                if (idx >= data.hourly.time.length) break;
+                
+                const timeStr = data.hourly.time[idx];
+                const temp = Math.round(data.hourly.temperature_2m[idx]);
+                const wmoCode = data.hourly.weather_code[idx];
+                const weatherInfo = getWeatherData(wmoCode);
+                
+                const dateObj = new Date(timeStr);
+                const hourString = `${dateObj.getHours()}:00`;
+
+                const forecastHourEl = document.createElement('div');
+                forecastHourEl.className = 'forecast-day';
+                forecastHourEl.innerHTML = `
+                    <span class="forecast-name">${hourString}</span>
+                    <div class="forecast-icon-placeholder" style="border: none; background: transparent; display: flex; align-items: center; justify-content: center;">
+                        <span class="material-symbols-outlined" style="font-size: 24px; color: #ffffff;">${weatherInfo.icon}</span>
+                    </div>
+                    <span class="forecast-temps">${temp}°</span>
+                `;
+                forecastContainer.appendChild(forecastHourEl);
+            }
+        }
+    } catch (err) {
+        console.error('Failed to fetch weather data:', err);
+        if (descEl) descEl.textContent = 'Fehler beim Laden';
+    }
+}
+
+/**
+ * Binds events and triggers initial weather load
+ */
+function initWeatherWidget(weatherEl) {
+    const refreshBtn = weatherEl.querySelector('.btn-weather-refresh');
+    if (refreshBtn) {
+        // Prevent duplicate handler bindings
+        if (refreshBtn.dataset.eventsBound) return;
+        refreshBtn.dataset.eventsBound = "true";
+
+        refreshBtn.addEventListener('click', async () => {
+            const icon = refreshBtn.querySelector('.material-symbols-outlined');
+            if (icon) icon.classList.add('rotating');
+            await fetchWeather(weatherEl);
+            if (icon) icon.classList.remove('rotating');
+        });
+    }
+
+    // Trigger initial load
+    fetchWeather(weatherEl);
+}
+
+/**
+ * Helper to compute relative time in German
+ */
+function getRelativeTime(pubDateStr) {
+    const pubDate = new Date(pubDateStr);
+    const now = new Date();
+    const diffMs = now - pubDate;
+    
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffMins < 60) {
+        return `vor ${Math.max(1, diffMins)}m`;
+    } else if (diffHours < 24) {
+        return `vor ${diffHours}h`;
+    } else {
+        return `vor ${diffDays}d`;
+    }
+}
+
+/**
+ * Fetches RSS feed data using a CORS bypass proxy (rss2json)
+ */
+async function fetchRSS(rssEl) {
+    const listEl = rssEl.querySelector('.rss-list');
+    if (!listEl) return;
+
+    try {
+        listEl.innerHTML = '<li class="rss-item"><span class="rss-text">Lade News...</span></li>';
+        
+        const timestamp = Date.now();
+        const feedUrl = encodeURIComponent(`https://venturebeat.com/category/ai/feed/?t=${timestamp}`);
+        const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${feedUrl}`);
+        if (!res.ok) throw new Error('API Error');
+        const data = await res.json();
+
+        if (data.status !== 'ok' || !data.items || data.items.length === 0) {
+            throw new Error('Invalid Feed Data');
+        }
+
+        // Store items on the element
+        rssEl.items = data.items;
+        renderRSSItems(rssEl);
+
+    } catch (err) {
+        console.error('Failed to fetch RSS data:', err);
+        listEl.innerHTML = '<li class="rss-item"><span class="rss-text">Fehler beim Laden der News.</span></li>';
+    }
+}
+
+/**
+ * Renders the RSS items depending on current expand state
+ */
+function renderRSSItems(rssEl) {
+    const listEl = rssEl.querySelector('.rss-list');
+    const items = rssEl.items || [];
+    if (!listEl || items.length === 0) return;
+
+    listEl.innerHTML = '';
+    const limit = rssEl.dataset.expanded === 'true' ? 8 : 3;
+
+    for (let i = 0; i < Math.min(items.length, limit); i++) {
+        const item = items[i];
+        const relativeTime = getRelativeTime(item.pubDate);
+
+        const li = document.createElement('li');
+        li.className = 'rss-item';
+        li.innerHTML = `
+            <span class="rss-dot"></span>
+            <a href="${item.link}" target="_blank" rel="noopener noreferrer" class="rss-link">
+                <span class="rss-text">${item.title}</span>
+            </a>
+            <span class="rss-time">${relativeTime}</span>
+        `;
+        listEl.appendChild(li);
+    }
+}
+
+/**
+ * Binds toggle event for expand/collapse and loads initial feed
+ */
+function initRSSWidget(rssEl) {
+    const moreBtn = rssEl.querySelector('.rss-more');
+    const refreshBtn = rssEl.querySelector('.btn-rss-refresh');
+
+    if (moreBtn) {
+        // Prevent duplicate handler bindings
+        if (moreBtn.dataset.eventsBound) return;
+        moreBtn.dataset.eventsBound = "true";
+
+        moreBtn.addEventListener('click', () => {
+            const isExpanded = rssEl.dataset.expanded === 'true';
+            rssEl.dataset.expanded = isExpanded ? 'false' : 'true';
+            moreBtn.textContent = isExpanded ? 'Mehr anzeigen' : 'Weniger anzeigen';
+            renderRSSItems(rssEl);
+        });
+    }
+
+    if (refreshBtn) {
+        if (refreshBtn.dataset.eventsBound) return;
+        refreshBtn.dataset.eventsBound = "true";
+
+        refreshBtn.addEventListener('click', async () => {
+            const icon = refreshBtn.querySelector('.material-symbols-outlined');
+            if (icon) icon.classList.add('rotating');
+            await fetchRSS(rssEl);
+            if (icon) icon.classList.remove('rotating');
+        });
+    }
+
+    // Trigger initial fetch
+    fetchRSS(rssEl);
 }
 
 // Expose functions globally for testing purposes
@@ -462,6 +746,13 @@ if (typeof window !== 'undefined') {
     window.getSupabaseClient = getSupabaseClient;
     window.getSupabaseCredentials = getSupabaseCredentials;
     window.handleAuthStateChange = handleAuthStateChange;
+    window.getWeatherData = getWeatherData;
+    window.fetchWeather = fetchWeather;
+    window.initWeatherWidget = initWeatherWidget;
+    window.getRelativeTime = getRelativeTime;
+    window.fetchRSS = fetchRSS;
+    window.renderRSSItems = renderRSSItems;
+    window.initRSSWidget = initRSSWidget;
 }
 
 // ========== AUTHENTICATION LOGIC ==========

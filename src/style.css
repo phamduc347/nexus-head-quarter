@@ -420,6 +420,30 @@ input {
     color: #cbd5e1;
 }
 
+.btn-weather-refresh {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius-full);
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #93c5fd;
+    transition: all var(--transition-fast);
+}
+
+.btn-weather-refresh:hover {
+    background: rgba(147, 197, 253, 0.15);
+    border-color: rgba(147, 197, 253, 0.5);
+    color: #ffffff;
+}
+
+.btn-weather-refresh .material-symbols-outlined {
+    font-size: 16px;
+}
+
 .weather-top {
     display: flex;
     align-items: center;
@@ -478,6 +502,24 @@ input {
     background: rgba(255, 255, 255, 0.35);
     border: 1px dashed rgba(3, 105, 161, 0.3);
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.weather-icon-container .material-symbols-outlined {
+    font-size: 48px;
+    color: #ffffff;
+}
+
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.rotating {
+    animation: rotate 1s linear infinite;
+    display: inline-block;
 }
 
 .weather-forecast {
@@ -638,6 +680,41 @@ input {
     padding-top: var(--space-sm);
     margin-top: var(--space-xs);
     border-top: 1px solid var(--border-color);
+}
+
+.rss-link {
+    flex: 1;
+    color: inherit;
+    text-decoration: none;
+}
+
+.rss-link:hover .rss-text {
+    color: var(--accent-blue);
+    text-decoration: underline;
+}
+
+.btn-rss-refresh {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-full);
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all var(--transition-fast);
+}
+
+.btn-rss-refresh:hover {
+    background: rgba(168, 85, 247, 0.1);
+    border-color: rgba(168, 85, 247, 0.4);
+    color: rgb(168, 85, 247);
+}
+
+.btn-rss-refresh .material-symbols-outlined {
+    font-size: 16px;
 }
 
 

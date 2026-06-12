@@ -322,4 +322,38 @@ describe('Nexus HQ Core UI Tests', () => {
             expect(grid.dataset.eventsBound).toBeUndefined();
         });
     });
+
+    describe('Weather Widget API Mapping', () => {
+        it('should correctly translate WMO codes to German descriptions and symbols', () => {
+            const clearSky = window.getWeatherData(0);
+            expect(clearSky.desc).toBe('Sonnig');
+            expect(clearSky.icon).toBe('wb_sunny');
+
+            const heavyRain = window.getWeatherData(65);
+            expect(heavyRain.desc).toBe('Starker Regen');
+            expect(heavyRain.icon).toBe('rainy');
+
+            const unknownCode = window.getWeatherData(999);
+            expect(unknownCode.desc).toBe('Unbekannt');
+            expect(unknownCode.icon).toBe('help_outline');
+        });
+    });
+
+    describe('RSS Widget Time formatting', () => {
+        it('should format relative times in German correctly', () => {
+            const now = new Date();
+            
+            // 5 minutes ago
+            const minsAgo = new Date(now.getTime() - 5 * 60 * 1000).toISOString();
+            expect(window.getRelativeTime(minsAgo)).toBe('vor 5m');
+
+            // 3 hours ago
+            const hoursAgo = new Date(now.getTime() - 3 * 60 * 60 * 1000).toISOString();
+            expect(window.getRelativeTime(hoursAgo)).toBe('vor 3h');
+
+            // 2 days ago
+            const daysAgo = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString();
+            expect(window.getRelativeTime(daysAgo)).toBe('vor 2d');
+        });
+    });
 });
