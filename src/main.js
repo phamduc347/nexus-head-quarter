@@ -61,12 +61,12 @@ function initWidgets() {
     const container = document.getElementById('dashboard-grid');
     if (!container) return;
 
-    // Load initial layout
-    loadLayout(container);
-
-    // Guard to prevent double event listener registration
+    // Guard to prevent double event listener registration and layout loading
     if (container.dataset.eventsBound) return;
     container.dataset.eventsBound = "true";
+
+    // Load initial layout
+    loadLayout(container);
 
     // Setup Edit Mode
     initEditMode(container);
@@ -87,6 +87,9 @@ function initWidgets() {
 async function loadLayout(container) {
     container.innerHTML = '';
 
+    // Render the Add Widget button at the top
+    renderAddButton(container);
+
     let layout = null;
     const client = getSupabaseClient();
     
@@ -105,6 +108,7 @@ async function loadLayout(container) {
             }
         } catch (e) {
             console.error('Failed to load layout from Supabase, falling back to localStorage', e);
+            alert('Database Load Error: ' + e.message);
         }
     }
 
@@ -130,8 +134,6 @@ async function loadLayout(container) {
         }
     });
 
-    // Render the Add Widget button
-    renderAddButton(container);
 }
 
 /**
@@ -152,16 +154,18 @@ async function saveLayout() {
         try {
             // Delete widgets that are no longer in our list
             if (layout.length > 0) {
-                await client
+                const { error: deleteError } = await client
                     .from('widget_layout')
                     .delete()
                     .eq('user_id', currentUser.id)
                     .not('widget_id', 'in', `(${layout.join(',')})`);
+                if (deleteError) throw deleteError;
             } else {
-                await client
+                const { error: deleteError } = await client
                     .from('widget_layout')
                     .delete()
                     .eq('user_id', currentUser.id);
+                if (deleteError) throw deleteError;
             }
 
             // Prep upsert rows
@@ -185,6 +189,7 @@ async function saveLayout() {
             }
         } catch (e) {
             console.error('Failed to save layout to Supabase', e);
+            alert('Database Save Error: ' + e.message);
         }
     }
 }
@@ -369,12 +374,12 @@ function addWidget(type) {
 
     const clone = template.content.cloneNode(true);
     
-    // Insert before the Add Widget action button
+    // Insert directly below the Add Button at the top of the widgets list
     const addBtn = document.getElementById('add-widget-btn');
     if (addBtn) {
-        container.insertBefore(clone, addBtn);
+        container.insertBefore(clone, addBtn.nextSibling);
     } else {
-        container.appendChild(clone);
+        container.prepend(clone);
     }
 
     saveLayout();
@@ -529,7 +534,10 @@ function handleAuthStateChange(event, session) {
             
             // Clear layout container to prevent residual visual data
             const grid = document.getElementById('dashboard-grid');
-            if (grid) grid.innerHTML = '';
+            if (grid) {
+                grid.innerHTML = '';
+                delete grid.dataset.eventsBound;
+            }
         }
     };
 

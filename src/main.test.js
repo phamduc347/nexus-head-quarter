@@ -100,6 +100,53 @@ describe('Nexus HQ Core UI Tests', () => {
             expect(saved).toEqual(['notes']);
         });
 
+        it('should render the "Add Widget" button at the very top of the grid when loadLayout() is called', () => {
+            document.body.innerHTML = `
+                <div id="dashboard-grid"></div>
+                <template id="template-weather"><div class="widget-wrapper" data-widget-id="weather">Weather</div></template>
+            `;
+            const container = document.getElementById('dashboard-grid');
+            window.loadLayout(container);
+
+            // The container's first child must be the "#add-widget-btn"
+            expect(container.firstElementChild.id).toBe('add-widget-btn');
+        });
+
+        it('should insert newly added widgets directly below the "Add Widget" button', () => {
+            document.body.innerHTML = `
+                <div id="dashboard-grid"></div>
+                <template id="template-notes"><div class="widget-wrapper" data-widget-id="notes">Notes</div></template>
+                <template id="template-weather"><div class="widget-wrapper" data-widget-id="weather">Weather</div></template>
+            `;
+            const container = document.getElementById('dashboard-grid');
+            window.loadLayout(container);
+
+            window.addWidget('notes');
+            window.addWidget('weather');
+
+            const children = Array.from(container.children);
+            expect(children[0].id).toBe('add-widget-btn');
+            expect(children[1].dataset.widgetId).toBe('weather');
+            expect(children[2].dataset.widgetId).toBe('notes');
+        });
+
+        it('should set dataset.eventsBound guard when initWidgets() runs, and prevent duplicate calls', () => {
+            document.body.innerHTML = `
+                <div id="dashboard-grid"></div>
+                <template id="template-weather"><div class="widget-wrapper" data-widget-id="weather">Weather</div></template>
+            `;
+            const container = document.getElementById('dashboard-grid');
+            
+            // First call registers everything and sets the guard
+            window.initWidgets();
+            expect(container.dataset.eventsBound).toBe('true');
+
+            // Clear container's innerHTML to check if subsequent initWidgets() calls are ignored
+            container.innerHTML = 'prevented-reload';
+            window.initWidgets();
+            expect(container.innerHTML).toBe('prevented-reload');
+        });
+
         it('should delete a widget and save new layout', async () => {
             localStorage.setItem('nexus-dashboard-layout', JSON.stringify(['weather']));
 
@@ -262,6 +309,17 @@ describe('Nexus HQ Core UI Tests', () => {
             const errEl = document.getElementById('auth-error');
             expect(errEl.classList.contains('hidden')).toBe(false);
             expect(errEl.textContent).toBe('Passwörter stimmen nicht überein.');
+        });
+
+        it('should clear dataset.eventsBound from container and clear innerHTML on logout', () => {
+            const grid = document.getElementById('dashboard-grid');
+            grid.dataset.eventsBound = 'true';
+            grid.innerHTML = '<div class="widget-wrapper">Some Widget</div>';
+
+            window.handleAuthStateChange('SIGNED_OUT', null);
+
+            expect(grid.innerHTML).toBe('');
+            expect(grid.dataset.eventsBound).toBeUndefined();
         });
     });
 });

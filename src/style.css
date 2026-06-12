@@ -1158,7 +1158,11 @@ input {
     border: 2px dashed var(--accent-blue);
     border-radius: var(--radius-lg);
     padding: var(--space-xs);
-    margin: calc(-1 * var(--space-xs) - 2px); /* offset padding & border */
+    margin-bottom: var(--space-lg); /* Spacing in edit mode to prevent collisions */
+}
+
+.edit-active .btn-add-widget {
+    margin-bottom: var(--space-lg); /* Spacing below the add button in edit mode */
 }
 
 /* Edit Mode Controls */
