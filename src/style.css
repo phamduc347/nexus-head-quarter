@@ -1157,9 +1157,6 @@ input {
 }
 
 
-/* ===================================================================
-   BOTTOM NAVIGATION
-   =================================================================== */
 .bottom-nav {
     position: fixed;
     bottom: 20px;
@@ -1168,14 +1165,14 @@ input {
     width: calc(100% - 32px);
     max-width: 480px;
     height: 64px;
-    background: #000000;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 9999px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-xl);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 8px;
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+    padding: 0 12px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
     z-index: 1000;
     view-transition-name: app-footer;
 }
@@ -1186,8 +1183,8 @@ input {
     align-items: center;
     gap: 8px;
     padding: 8px 14px;
-    border-radius: 9999px;
-    color: rgba(255, 255, 255, 0.6);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
     background: transparent;
     border: none;
     cursor: pointer;
