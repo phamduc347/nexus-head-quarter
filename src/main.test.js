@@ -7,6 +7,9 @@ describe('Nexus HQ Core UI Tests', () => {
         // Clear local storage and body
         localStorage.clear();
         document.body.innerHTML = '';
+        if (window.handleAuthStateChange) {
+            window.handleAuthStateChange('SIGNED_OUT', null);
+        }
     });
 
     describe('Navigation', () => {
@@ -194,6 +197,8 @@ describe('Nexus HQ Core UI Tests', () => {
                 select: vi.fn().mockReturnThis(),
                 eq: vi.fn().mockReturnThis(),
                 order: vi.fn().mockResolvedValue({ data: [], error: null }),
+                single: vi.fn().mockResolvedValue({ data: null, error: null }),
+                maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
                 delete: vi.fn().mockReturnThis(),
                 not: vi.fn().mockReturnThis(),
                 upsert: vi.fn().mockResolvedValue({ error: null })
@@ -318,6 +323,76 @@ describe('Nexus HQ Core UI Tests', () => {
 
             expect(grid.innerHTML).toBe('');
             expect(grid.dataset.eventsBound).toBeUndefined();
+        });
+
+        it('should load settings from Supabase and update local storage', async () => {
+            window.NEXUS_SUPABASE_URL = 'https://some-project.supabase.co';
+            window.NEXUS_SUPABASE_ANON_KEY = 'some-anon-key';
+            
+            const client = window.getSupabaseClient();
+            vi.spyOn(client, 'from');
+            client.maybeSingle = vi.fn().mockResolvedValue({ data: { settings: { hidden_calendars: ['calendar-1', 'calendar-2'] } }, error: null });
+
+            window.handleAuthStateChange('INITIAL', { user: { id: 'user-123', email: 'user@nexus.com' } });
+            await new Promise(resolve => setTimeout(resolve, 10));
+
+            expect(client.from).toHaveBeenCalledWith('user_settings');
+            expect(JSON.parse(localStorage.getItem('nexus-hidden-calendars'))).toEqual(['calendar-1', 'calendar-2']);
+        });
+
+        it('should update local settings state but not save to Supabase when updateSetting is called', async () => {
+            window.NEXUS_SUPABASE_URL = 'https://some-project.supabase.co';
+            window.NEXUS_SUPABASE_ANON_KEY = 'some-anon-key';
+            
+            const client = window.getSupabaseClient();
+            client.maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+
+            window.handleAuthStateChange('INITIAL', { user: { id: 'user-123', email: 'user@nexus.com' } });
+            await new Promise(resolve => setTimeout(resolve, 10));
+
+            vi.spyOn(client, 'from');
+            vi.spyOn(client, 'upsert');
+            client.from.mockClear();
+            client.upsert.mockClear();
+
+            await window.updateSetting('hidden_calendars', ['calendar-3']);
+
+            expect(client.from).not.toHaveBeenCalled();
+            expect(client.upsert).not.toHaveBeenCalled();
+            expect(JSON.parse(localStorage.getItem('nexus-hidden-calendars'))).toEqual(['calendar-3']);
+        });
+
+        it('should upsert settings to Supabase when saveAllUserSettings is called', async () => {
+            window.NEXUS_SUPABASE_URL = 'https://some-project.supabase.co';
+            window.NEXUS_SUPABASE_ANON_KEY = 'some-anon-key';
+            
+            const client = window.getSupabaseClient();
+            client.maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+
+            window.handleAuthStateChange('INITIAL', { user: { id: 'user-123', email: 'user@nexus.com' } });
+            await new Promise(resolve => setTimeout(resolve, 10));
+
+            // Set state first
+            await window.updateSetting('hidden_calendars', ['calendar-4']);
+
+            vi.spyOn(client, 'from');
+            vi.spyOn(client, 'upsert');
+            client.from.mockClear();
+            client.upsert.mockClear();
+
+            // Set up mock DOM elements that saveAllUserSettings relies on
+            document.body.innerHTML += `
+                <div id="settings-save-status"></div>
+                <button id="btn-save-settings"></button>
+            `;
+
+            await window.saveAllUserSettings();
+
+            expect(client.from).toHaveBeenCalledWith('user_settings');
+            expect(client.upsert).toHaveBeenCalledWith(expect.objectContaining({
+                user_id: 'user-123',
+                settings: expect.objectContaining({ hidden_calendars: ['calendar-4'] })
+            }));
         });
     });
 

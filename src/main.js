@@ -809,13 +809,7 @@ async function renderGoogleCalendarList(providerToken) {
 
     try {
         const calendars = await fetchGoogleCalendarList(providerToken);
-        const hiddenCalendarsStr = localStorage.getItem('nexus-hidden-calendars');
-        let hiddenCalendars = [];
-        try {
-            hiddenCalendars = hiddenCalendarsStr ? JSON.parse(hiddenCalendarsStr) : [];
-        } catch (e) {
-            hiddenCalendars = [];
-        }
+        const hiddenCalendars = currentUserSettings.hidden_calendars || [];
 
         container.innerHTML = '';
         calendars.forEach(cal => {
@@ -831,13 +825,9 @@ async function renderGoogleCalendarList(providerToken) {
             checkbox.checked = !isHidden;
             checkbox.dataset.calendarId = cal.id;
 
-            checkbox.addEventListener('change', (e) => {
+            checkbox.addEventListener('change', async (e) => {
                 const id = e.target.dataset.calendarId;
-                let currentHidden = [];
-                try {
-                    const str = localStorage.getItem('nexus-hidden-calendars');
-                    currentHidden = str ? JSON.parse(str) : [];
-                } catch (err) {}
+                let currentHidden = [...(currentUserSettings.hidden_calendars || [])];
 
                 if (e.target.checked) {
                     currentHidden = currentHidden.filter(cid => cid !== id);
@@ -846,7 +836,7 @@ async function renderGoogleCalendarList(providerToken) {
                         currentHidden.push(id);
                     }
                 }
-                localStorage.setItem('nexus-hidden-calendars', JSON.stringify(currentHidden));
+                await updateSetting('hidden_calendars', currentHidden);
                 renderTimelineEvents(true);
             });
 
@@ -1025,13 +1015,7 @@ async function fetchGoogleCalendarEvents(providerToken) {
     const timeMax = twoWeeksLater.toISOString();
 
     // 2. Fetch events from all selected calendars in parallel
-    const hiddenCalendarsStr = localStorage.getItem('nexus-hidden-calendars');
-    let hiddenCalendars = [];
-    try {
-        hiddenCalendars = hiddenCalendarsStr ? JSON.parse(hiddenCalendarsStr) : [];
-    } catch (e) {
-        hiddenCalendars = [];
-    }
+    const hiddenCalendars = currentUserSettings.hidden_calendars || [];
 
     const fetchPromises = calendars.map(async (cal) => {
         // Skip hidden/unselected calendars
@@ -1248,12 +1232,125 @@ if (typeof window !== 'undefined') {
     window.fetchGoogleCalendarEvents = fetchGoogleCalendarEvents;
     window.renderTimelineEvents = renderTimelineEvents;
     window.initTimelineRefresh = initTimelineRefresh;
+    window.loadUserSettings = loadUserSettings;
+    window.updateSetting = updateSetting;
+    window.saveAllUserSettings = saveAllUserSettings;
 }
 
 // ========== AUTHENTICATION LOGIC ==========
 
 let supabaseClient = null;
 let currentUser = null;
+
+let currentUserSettings = {
+    hidden_calendars: []
+};
+
+async function loadUserSettings() {
+    const client = getSupabaseClient();
+    if (!client || !currentUser) {
+        // Fallback to local storage if not logged in
+        try {
+            const localHidden = localStorage.getItem('nexus-hidden-calendars');
+            currentUserSettings.hidden_calendars = localHidden ? JSON.parse(localHidden) : [];
+        } catch (e) {
+            currentUserSettings.hidden_calendars = [];
+        }
+        return;
+    }
+
+    try {
+        const { data, error } = await client
+            .from('user_settings')
+            .select('settings')
+            .eq('user_id', currentUser.id)
+            .maybeSingle();
+
+        if (error) throw error;
+
+        if (data && data.settings) {
+            currentUserSettings = { ...currentUserSettings, ...data.settings };
+            // Populate localStorage as a fast local fallback/cache
+            if (currentUserSettings.hidden_calendars) {
+                localStorage.setItem('nexus-hidden-calendars', JSON.stringify(currentUserSettings.hidden_calendars));
+            }
+        } else {
+            // No settings in DB yet, load from localStorage if exists
+            try {
+                const localHidden = localStorage.getItem('nexus-hidden-calendars');
+                currentUserSettings.hidden_calendars = localHidden ? JSON.parse(localHidden) : [];
+            } catch (e) {
+                currentUserSettings.hidden_calendars = [];
+            }
+        }
+    } catch (e) {
+        console.error('Failed to load user settings from Supabase', e);
+        // Fallback to local storage on error
+        try {
+            const localHidden = localStorage.getItem('nexus-hidden-calendars');
+            currentUserSettings.hidden_calendars = localHidden ? JSON.parse(localHidden) : [];
+        } catch (err) {
+            currentUserSettings.hidden_calendars = [];
+        }
+    }
+}
+
+async function updateSetting(key, value) {
+    currentUserSettings[key] = value;
+
+    // Fast local update
+    if (key === 'hidden_calendars') {
+        localStorage.setItem('nexus-hidden-calendars', JSON.stringify(value));
+    }
+}
+
+async function saveAllUserSettings() {
+    const saveBtn = document.getElementById('btn-save-settings');
+    const statusText = document.getElementById('settings-save-status');
+
+    if (saveBtn) saveBtn.disabled = true;
+    if (statusText) {
+        statusText.textContent = "Wird gespeichert...";
+        statusText.style.display = 'inline';
+        statusText.style.color = '#a0aec0';
+    }
+
+    const client = getSupabaseClient();
+    if (client && currentUser) {
+        try {
+            const { error } = await client
+                .from('user_settings')
+                .upsert({
+                    user_id: currentUser.id,
+                    settings: currentUserSettings,
+                    updated_at: new Date().toISOString()
+                });
+            if (error) throw error;
+
+            if (statusText) {
+                statusText.textContent = "Einstellungen in Cloud gespeichert";
+                setTimeout(() => {
+                    statusText.style.display = 'none';
+                }, 3000);
+            }
+        } catch (e) {
+            console.error('Failed to save settings to Supabase', e);
+            if (statusText) {
+                statusText.textContent = "Fehler beim Speichern!";
+                statusText.style.color = "red";
+            }
+        }
+    } else {
+        if (statusText) {
+            statusText.textContent = "Lokal gespeichert (nicht angemeldet)";
+            setTimeout(() => {
+                statusText.style.display = 'none';
+            }, 3000);
+        }
+    }
+
+    if (saveBtn) saveBtn.disabled = false;
+}
 
 function getSupabaseCredentials() {
     const url = window.NEXUS_SUPABASE_URL || window.VITE_SUPABASE_URL;
@@ -1365,7 +1462,7 @@ function handleAuthStateChange(event, session) {
         }
     }
     
-    const updateDOM = () => {
+    const updateDOM = async () => {
         if (session) {
             // User is logged in
             document.body.classList.remove('auth-locked');
@@ -1383,6 +1480,9 @@ function handleAuthStateChange(event, session) {
                 if (homeNav) homeNav.classList.add('active');
             }
 
+            // Load user settings from Supabase before initializing UI components
+            await loadUserSettings();
+
             // Initialize widgets for user
             initWidgets();
             updateGoogleCalendarStatus();
@@ -1397,6 +1497,9 @@ function handleAuthStateChange(event, session) {
             // User is logged out
             document.body.classList.add('auth-locked');
             
+            // Reset settings on sign-out
+            currentUserSettings = { hidden_calendars: [] };
+
             // Deactivate all screens and activate auth screen
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             const authScreen = document.getElementById('screen-auth');
@@ -1766,6 +1869,11 @@ const startApp = async () => {
     initPullToRefresh();
     await loadConfigScript();
     initAuth();
+
+    const saveSettingsBtn = document.getElementById('btn-save-settings');
+    if (saveSettingsBtn) {
+        saveSettingsBtn.addEventListener('click', saveAllUserSettings);
+    }
 };
 
 if (document.readyState === 'loading') {
