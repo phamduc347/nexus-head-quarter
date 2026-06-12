@@ -535,6 +535,14 @@ input {
     align-items: center;
     gap: 6px;
     flex: 1;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.forecast-day.revealed {
+    opacity: 1;
+    transform: translateY(0);
 }
 
 .forecast-name {
@@ -650,6 +658,14 @@ input {
     align-items: flex-start;
     gap: var(--space-sm);
     padding: var(--space-sm) 0;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.rss-item.revealed {
+    opacity: 1;
+    transform: translateY(0);
 }
 
 .rss-dot {

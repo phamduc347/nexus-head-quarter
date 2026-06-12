@@ -525,10 +525,18 @@ async function fetchWeather(weatherEl) {
     const iconContainer = weatherEl.querySelector('.weather-icon-container');
     const forecastContainer = weatherEl.querySelector('.weather-forecast');
 
+    const startTime = Date.now();
+
     try {
         const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=51.0504&longitude=13.7373&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&hourly=temperature_2m,weather_code&timezone=Europe%2FBerlin');
         if (!res.ok) throw new Error('API Error');
         const data = await res.json();
+
+        // Enforce min 500ms duration for loading animations
+        const elapsed = Date.now() - startTime;
+        if (elapsed < 500) {
+            await new Promise(resolve => setTimeout(resolve, 500 - elapsed));
+        }
 
         // Update current weather
         const currentTemp = Math.round(data.current.temperature_2m);
@@ -590,10 +598,20 @@ async function fetchWeather(weatherEl) {
                     <span class="forecast-temps">${temp}°</span>
                 `;
                 forecastContainer.appendChild(forecastHourEl);
+
+                // Staggered fade-in animation
+                setTimeout(() => {
+                    forecastHourEl.classList.add('revealed');
+                }, k * 60);
             }
         }
     } catch (err) {
         console.error('Failed to fetch weather data:', err);
+        // Enforce min 500ms duration for loading animations even on failure
+        const elapsed = Date.now() - startTime;
+        if (elapsed < 500) {
+            await new Promise(resolve => setTimeout(resolve, 500 - elapsed));
+        }
         if (descEl) descEl.textContent = 'Fehler beim Laden';
     }
 }
@@ -648,14 +666,22 @@ async function fetchRSS(rssEl) {
     const listEl = rssEl.querySelector('.rss-list');
     if (!listEl) return;
 
+    const startTime = Date.now();
+
     try {
-        listEl.innerHTML = '<li class="rss-item"><span class="rss-text">Lade News...</span></li>';
+        listEl.innerHTML = '<li class="rss-item revealed"><span class="rss-text">Lade News...</span></li>';
         
         const timestamp = Date.now();
         const feedUrl = encodeURIComponent(`https://venturebeat.com/category/ai/feed/?t=${timestamp}`);
         const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${feedUrl}`);
         if (!res.ok) throw new Error('API Error');
         const data = await res.json();
+
+        // Enforce min 500ms duration for loading animations
+        const elapsed = Date.now() - startTime;
+        if (elapsed < 500) {
+            await new Promise(resolve => setTimeout(resolve, 500 - elapsed));
+        }
 
         if (data.status !== 'ok' || !data.items || data.items.length === 0) {
             throw new Error('Invalid Feed Data');
@@ -667,7 +693,12 @@ async function fetchRSS(rssEl) {
 
     } catch (err) {
         console.error('Failed to fetch RSS data:', err);
-        listEl.innerHTML = '<li class="rss-item"><span class="rss-text">Fehler beim Laden der News.</span></li>';
+        // Enforce min 500ms duration for loading animations even on failure
+        const elapsed = Date.now() - startTime;
+        if (elapsed < 500) {
+            await new Promise(resolve => setTimeout(resolve, 500 - elapsed));
+        }
+        listEl.innerHTML = '<li class="rss-item revealed"><span class="rss-text">Fehler beim Laden der News.</span></li>';
     }
 }
 
@@ -696,6 +727,11 @@ function renderRSSItems(rssEl) {
             <span class="rss-time">${relativeTime}</span>
         `;
         listEl.appendChild(li);
+
+        // Staggered fade-in animation
+        setTimeout(() => {
+            li.classList.add('revealed');
+        }, i * 50);
     }
 }
 
