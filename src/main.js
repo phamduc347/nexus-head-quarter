@@ -869,8 +869,9 @@ function parseEvent(evt) {
         dateObj: dateObj,
         timeStr: timeStr,
         isAllDay: isAllDay,
-        source: evt.source || 'Google Calendar',
-        sourceClass: evt.sourceClass || 'source-google'
+        source: evt.calendarName || evt.source || 'Google Calendar',
+        sourceClass: evt.sourceClass || 'source-google',
+        calendarColor: evt.calendarColor || null
     };
 }
 
@@ -915,16 +916,8 @@ function getGermanFormattedDate(dateStr) {
     return `${dateObj.getDate()}. ${months[dateObj.getMonth()]}`;
 }
 
-async function fetchGoogleCalendarEvents(providerToken) {
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    const timeMin = todayStart.toISOString();
-
-    const twoWeeksLater = new Date(todayStart.getTime() + 14 * 24 * 60 * 60 * 1000);
-    const timeMax = twoWeeksLater.toISOString();
-
-    const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}&singleEvents=true&orderBy=startTime`;
-
+async function fetchGoogleCalendarList(providerToken) {
+    const url = `https://www.googleapis.com/calendar/v3/users/me/calendarList`;
     const response = await fetch(url, {
         headers: {
             'Authorization': `Bearer ${providerToken}`
@@ -934,13 +927,59 @@ async function fetchGoogleCalendarEvents(providerToken) {
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         const status = response.status;
-        const err = new Error(errorData.error?.message || 'Google API Error');
+        const err = new Error(errorData.error?.message || 'Google Calendar List Error');
         err.status = status;
         throw err;
     }
 
     const data = await response.json();
     return data.items || [];
+}
+
+async function fetchGoogleCalendarEvents(providerToken) {
+    // 1. Fetch all calendars first
+    const calendars = await fetchGoogleCalendarList(providerToken);
+    
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const timeMin = todayStart.toISOString();
+
+    const twoWeeksLater = new Date(todayStart.getTime() + 14 * 24 * 60 * 60 * 1000);
+    const timeMax = twoWeeksLater.toISOString();
+
+    // 2. Fetch events from all selected calendars in parallel
+    const fetchPromises = calendars.map(async (cal) => {
+        // Skip hidden/unselected calendars
+        if (cal.selected === false) return [];
+
+        const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(cal.id)}/events?timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}&singleEvents=true&orderBy=startTime`;
+        
+        try {
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${providerToken}`
+                }
+            });
+            if (!response.ok) {
+                console.warn(`Failed to fetch events for calendar ${cal.summary} (${cal.id})`);
+                return [];
+            }
+            const data = await response.json();
+            return (data.items || []).map(item => ({
+                ...item,
+                calendarName: cal.summary,
+                calendarColor: cal.backgroundColor || null
+            }));
+        } catch (e) {
+            console.warn(`Error fetching events for calendar ${cal.summary}:`, e);
+            return [];
+        }
+    });
+
+    const results = await Promise.all(fetchPromises);
+    
+    // 3. Flatten and return all events
+    return results.flat();
 }
 
 async function renderTimelineEvents(forceRefresh = false) {
@@ -1061,12 +1100,14 @@ async function renderTimelineEvents(forceRefresh = false) {
             eventEl.className = 'timeline-event';
             
             const timeClass = evt.isAllDay ? 'event-time event-allday' : 'event-time';
+            
+            const sourceStyle = evt.calendarColor ? `style="color: ${evt.calendarColor}"` : '';
 
             eventEl.innerHTML = `
                 <span class="${timeClass}">${evt.timeStr}</span>
                 <div class="event-details">
                     <span class="event-title">${evt.title}</span>
-                    <span class="event-source ${evt.sourceClass}">${evt.source}</span>
+                    <span class="event-source ${evt.sourceClass}" ${sourceStyle}>${evt.source}</span>
                 </div>
             `;
             eventsContainer.appendChild(eventEl);
