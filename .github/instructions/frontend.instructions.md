@@ -22,3 +22,4 @@
 - Vermeide unnoetige Inline-Styles und Inline-Skripte.
 - Beruecksichtige A11y (z. B. alt-Texte, Label, Fokus-Zustaende).
 - Neue UI Komponenten muessen sowohl für den light, als auch für den dark mode funktionieren
+- Es muss zwingend darauf geachtet werden, dass sich Text-Elemente und Layout-Container niemals überschneiden oder miteinander kollidieren

@@ -7,7 +7,7 @@
 ## Globale Kommunikationsregeln
 - Antworte präzise, direkt und umsetzungsorientiert.
 - Nenne bei Änderungen betroffene Dateien und erkläre deren Auswirkungen.
-- Gib für Terminal-Schritte (z. B. Git) kopierbare Einzelbefehle aus (vermeide Ketten mit `&&` oder `;`).
+- Gib Git-Commit-Vorschläge immer als kopierbaren Einzeiler (inklusive `git add`, `git commit` and `git push` verkettet mit `&&`) aus.
 
 ## Code-Style & Modularität
 - **Modularer Aufbau:** Widgets leben in `src/widgets/<widget-name>/`.

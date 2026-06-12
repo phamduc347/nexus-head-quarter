@@ -6,7 +6,7 @@
 
 ## Befehls-Formatierung
 - Gib Befehle immer als einzelne, direkt ausführbare und kopierbare Zeilen aus.
-- Keine Verkettungen (z. B. `git add . && git commit`), um Fehleranalyse und manuelle Ausführung zu vereinfachen.
+- Git-Commit-Vorschläge müssen immer als zusammenhängender, kopierbarer Einzeiler inklusive `git add`, `git commit` und `git push` (verkettet mit `&&`) zurückgegeben werden, damit der User diese auf einmal im Terminal ausführen kann.
 
 ## Commits & Branches
 - Hauptentwicklungs-Branch ist `main`.
