@@ -90,14 +90,16 @@
 
         <!-- ========== SCREEN: HOME ========== -->
         <div class="screen" id="screen-home">
-            <header class="app-header" style="justify-content: flex-end;">
-                <button id="edit-mode-btn" class="btn-icon" aria-label="Layout bearbeiten">
-                    <span class="material-symbols-outlined">edit</span>
-                </button>
-                <button class="btn-icon theme-toggle-btn" aria-label="Design umschalten">
-                    <span class="material-symbols-outlined">dark_mode</span>
-                </button>
-                <div class="avatar" aria-label="Benutzerprofil"></div>
+            <header class="app-header">
+                <div class="app-header-actions">
+                    <button id="edit-mode-btn" class="btn-icon" aria-label="Layout bearbeiten">
+                        <span class="material-symbols-outlined">edit</span>
+                    </button>
+                    <button class="btn-icon theme-toggle-btn" aria-label="Design umschalten">
+                        <span class="material-symbols-outlined">dark_mode</span>
+                    </button>
+                    <div class="avatar" aria-label="Benutzerprofil"></div>
+                </div>
             </header>
 
             <div class="screen-content">
@@ -118,7 +120,7 @@
             <header class="app-header timeline-header-wrapper">
                 <div class="timeline-header-top">
                     <span class="timeline-header-date" id="timeline-header-date">28. Mai 2025</span>
-                    <div class="timeline-header-actions">
+                    <div class="timeline-header-actions app-header-actions">
                         <button class="btn-icon theme-toggle-btn" aria-label="Design umschalten">
                             <span class="material-symbols-outlined">dark_mode</span>
                         </button>
@@ -152,11 +154,13 @@
 
         <!-- ========== SCREEN: SETTINGS ========== -->
         <div class="screen" id="screen-settings">
-            <header class="app-header" style="justify-content: flex-end;">
-                <button class="btn-icon theme-toggle-btn" aria-label="Design umschalten">
-                    <span class="material-symbols-outlined">dark_mode</span>
-                </button>
-                <div class="avatar" aria-label="Benutzerprofil"></div>
+            <header class="app-header">
+                <div class="app-header-actions">
+                    <button class="btn-icon theme-toggle-btn" aria-label="Design umschalten">
+                        <span class="material-symbols-outlined">dark_mode</span>
+                    </button>
+                    <div class="avatar" aria-label="Benutzerprofil"></div>
+                </div>
             </header>
 
             <div class="screen-content">
@@ -464,6 +468,6 @@
         }
     </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="./src/main.js"></script>
+    <script src="./src/main.js"></script>
 </body>
 </html>

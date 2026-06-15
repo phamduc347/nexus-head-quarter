@@ -1489,6 +1489,7 @@ if (typeof window !== 'undefined') {
     window.saveAllUserSettings = saveAllUserSettings;
     window.initTheme = initTheme;
     window.toggleTheme = toggleTheme;
+    window.loadConfigScript = loadConfigScript;
     window.updateAvatar = updateAvatar;
     window.hashCode = hashCode;
     window.getWelcomeMessage = getWelcomeMessage;
@@ -2124,10 +2125,26 @@ function loadConfigScript() {
             resolve();
             return;
         }
+
+        let settled = false;
+        let timeoutId = null;
+        const finish = () => {
+            if (settled) return;
+            settled = true;
+            if (timeoutId) clearTimeout(timeoutId);
+            resolve();
+        };
+
+        // Prevent hanging forever on networks/devices where script loading stalls.
+        timeoutId = setTimeout(() => {
+            console.warn('config.js loading timed out, continuing bootstrap without config.js');
+            finish();
+        }, 3000);
+
         const script = document.createElement('script');
         script.src = './config.js';
-        script.onload = () => resolve();
-        script.onerror = () => resolve(); // continue even if script fails to load
+        script.onload = finish;
+        script.onerror = finish; // continue even if script fails to load
         document.body.appendChild(script);
     });
 }

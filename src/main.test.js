@@ -296,6 +296,24 @@ describe('Nexus HQ Core UI Tests', () => {
             vi.useRealTimers();
         });
 
+        it('should resolve config loader when config.js request hangs', async () => {
+            vi.useFakeTimers();
+
+            const originalHappyDOM = window.happyDOM;
+            const appendChildSpy = vi.spyOn(document.body, 'appendChild').mockImplementation((node) => node);
+            delete window.happyDOM;
+
+            const loadPromise = window.loadConfigScript();
+            vi.advanceTimersByTime(3100);
+            await expect(loadPromise).resolves.toBeUndefined();
+
+            if (typeof originalHappyDOM !== 'undefined') {
+                window.happyDOM = originalHappyDOM;
+            }
+            appendChildSpy.mockRestore();
+            vi.useRealTimers();
+        });
+
         it('should display warning if passwords do not match during sign up', async () => {
             window.NEXUS_SUPABASE_URL = 'https://some-project.supabase.co';
             window.NEXUS_SUPABASE_ANON_KEY = 'some-anon-key';
