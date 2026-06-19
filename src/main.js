@@ -1110,8 +1110,9 @@ async function updateGoogleCalendarStatus() {
         }
     }
 
-    if ((isMock || (session && session.provider_token)) && !disconnected) {
-        const token = isMock ? 'mock-token' : session.provider_token;
+    const cachedGoogleToken = session?.provider_token || localStorage.getItem('nexus-google-provider-token');
+    if ((isMock || cachedGoogleToken) && !disconnected) {
+        const token = isMock ? 'mock-token' : cachedGoogleToken;
         statusContainer.innerHTML = `
             <div style="display: flex; align-items: center; gap: 8px;">
                 <span class="status-badge badge-green-sm" style="margin-right: 4px;">Verbunden${isMock ? ' (Simuliert)' : ''}</span>
@@ -1123,6 +1124,7 @@ async function updateGoogleCalendarStatus() {
             disconnectBtn.addEventListener('click', () => {
                 localStorage.setItem('google-calendar-disconnected', 'true');
                 localStorage.removeItem('nexus-mock-google-calendar');
+                localStorage.removeItem('nexus-google-provider-token');
                 updateGoogleCalendarStatus();
                 renderTimelineEvents();
             });
@@ -1433,7 +1435,8 @@ async function renderTimelineEvents(forceRefresh = false) {
 
     const disconnected = localStorage.getItem('google-calendar-disconnected') === 'true';
     const isMock = localStorage.getItem('nexus-mock-google-calendar') === 'true';
-    const isConnected = !!((isMock || (session && session.provider_token)) && !disconnected);
+    const cachedGoogleToken = session?.provider_token || localStorage.getItem('nexus-google-provider-token');
+    const isConnected = !!((isMock || cachedGoogleToken) && !disconnected);
 
     // Set today's date in header
     const headerDateEl = document.getElementById('timeline-header-date');
@@ -1469,7 +1472,7 @@ async function renderTimelineEvents(forceRefresh = false) {
 
     if (isConnected) {
         try {
-            const token = isMock ? 'mock-token' : session.provider_token;
+            const token = isMock ? 'mock-token' : cachedGoogleToken;
             rawEvents = await fetchGoogleCalendarEvents(token);
         } catch (err) {
             console.error('Error fetching Google Calendar events:', err);
@@ -2064,6 +2067,11 @@ function handleAuthStateChange(event, session) {
     const emailEl = document.getElementById('settings-user-email');
     currentUser = session ? session.user : null;
     
+    // Cache the Google provider_token when received (Supabase only delivers it once after OAuth)
+    if (session && session.provider_token) {
+        localStorage.setItem('nexus-google-provider-token', session.provider_token);
+    }
+    
     // Clean up url hash if redirect contains token
     if (session && window.location.hash && (window.location.hash.includes('access_token') || window.location.hash.includes('id_token'))) {
         try {
@@ -2113,6 +2121,7 @@ function handleAuthStateChange(event, session) {
             // Reset settings on sign-out
             currentUserSettings = { hidden_calendars: [] };
             currentUserNotes = [];
+            localStorage.removeItem('nexus-google-provider-token');
 
             // Deactivate all screens and activate auth screen
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
