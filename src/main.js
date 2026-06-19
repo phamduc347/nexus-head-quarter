@@ -817,7 +817,29 @@ function initRSSWidget(rssEl) {
 
 // ========== GOOGLE CALENDAR INTEGRATION LOGIC ==========
 
+function isLocalhost() {
+    const host = window.location.hostname;
+    return host === 'localhost' || 
+           host === '127.0.0.1' || 
+           host === '' || 
+           host.endsWith('.local') ||
+           host.startsWith('192.168.') ||
+           host.startsWith('10.') ||
+           host.startsWith('172.');
+}
+
 async function linkGoogleAccount() {
+    if (isLocalhost()) {
+        const useMock = confirm("Möchtest du die Google Kalender-Verbindung für die lokale Entwicklung simulieren (Mock)?\n\nDadurch wird kein echtes OAuth gestartet und du wirst nicht weitergeleitet.");
+        if (useMock) {
+            localStorage.setItem('nexus-mock-google-calendar', 'true');
+            localStorage.removeItem('google-calendar-disconnected');
+            updateGoogleCalendarStatus();
+            renderTimelineEvents(true);
+            return;
+        }
+    }
+
     const client = getSupabaseClient();
     if (!client) return;
     localStorage.removeItem('google-calendar-disconnected');
@@ -901,18 +923,24 @@ async function updateGoogleCalendarStatus() {
     if (!statusContainer) return;
 
     const client = getSupabaseClient();
-    if (!client) {
-        statusContainer.innerHTML = `<span class="status-badge">Nicht verbunden</span>`;
-        return;
+    const disconnected = localStorage.getItem('google-calendar-disconnected') === 'true';
+    const isMock = localStorage.getItem('nexus-mock-google-calendar') === 'true';
+
+    let session = null;
+    if (client) {
+        try {
+            const { data } = await client.auth.getSession();
+            session = data.session;
+        } catch (e) {
+            console.warn('Failed to get session in updateGoogleCalendarStatus:', e);
+        }
     }
 
-    const { data: { session } } = await client.auth.getSession();
-    const disconnected = localStorage.getItem('google-calendar-disconnected') === 'true';
-
-    if (session && session.provider_token && !disconnected) {
+    if ((isMock || (session && session.provider_token)) && !disconnected) {
+        const token = isMock ? 'mock-token' : session.provider_token;
         statusContainer.innerHTML = `
             <div style="display: flex; align-items: center; gap: 8px;">
-                <span class="status-badge badge-green-sm" style="margin-right: 4px;">Verbunden</span>
+                <span class="status-badge badge-green-sm" style="margin-right: 4px;">Verbunden${isMock ? ' (Simuliert)' : ''}</span>
                 <button type="button" id="btn-disconnect-google" class="btn-link-google btn-text">Trennen</button>
             </div>
         `;
@@ -920,11 +948,12 @@ async function updateGoogleCalendarStatus() {
         if (disconnectBtn) {
             disconnectBtn.addEventListener('click', () => {
                 localStorage.setItem('google-calendar-disconnected', 'true');
+                localStorage.removeItem('nexus-mock-google-calendar');
                 updateGoogleCalendarStatus();
                 renderTimelineEvents();
             });
         }
-        renderGoogleCalendarList(session.provider_token);
+        renderGoogleCalendarList(token);
     } else {
         statusContainer.innerHTML = `
             <button type="button" id="btn-link-google" class="btn-link-google btn-text">Verknüpfen</button>
@@ -1041,6 +1070,12 @@ function getGermanFormattedDate(dateStr) {
 }
 
 async function fetchGoogleCalendarList(providerToken) {
+    if (providerToken === 'mock-token') {
+        return [
+            { id: 'primary', summary: 'Persönlich (Mock)', backgroundColor: '#4285F4', selected: true },
+            { id: 'work', summary: 'Arbeit (Mock)', backgroundColor: '#34A853', selected: true }
+        ];
+    }
     const url = `https://www.googleapis.com/calendar/v3/users/me/calendarList`;
     const response = await fetch(url, {
         headers: {
@@ -1061,6 +1096,38 @@ async function fetchGoogleCalendarList(providerToken) {
 }
 
 async function fetchGoogleCalendarEvents(providerToken) {
+    if (providerToken === 'mock-token') {
+        const todayStr = (d) => d.toISOString().split('T')[0];
+        const now = new Date();
+        return [
+            {
+                id: 'mock-1',
+                summary: 'Projekt Sync (Mock)',
+                description: 'Lokal simulierter Termin für Entwicklungszwecke.',
+                location: 'Virtuell',
+                start: { dateTime: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 10, 0).toISOString() },
+                end: { dateTime: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 11, 0).toISOString() },
+                calendarName: 'Persönlich (Mock)',
+                calendarColor: '#4285F4'
+            },
+            {
+                id: 'mock-2',
+                summary: 'Ganztägiges Event (Mock)',
+                start: { date: todayStr(new Date(now.getTime() + 86400000)) },
+                calendarName: 'Persönlich (Mock)',
+                calendarColor: '#4285F4'
+            },
+            {
+                id: 'mock-3',
+                summary: 'Wichtiges Meeting (Mock)',
+                start: { dateTime: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2, 14, 0).toISOString() },
+                end: { dateTime: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2, 15, 30).toISOString() },
+                calendarName: 'Arbeit (Mock)',
+                calendarColor: '#34A853'
+            }
+        ];
+    }
+
     // 1. Fetch all calendars first
     const calendars = await fetchGoogleCalendarList(providerToken);
     
@@ -1182,12 +1249,17 @@ async function renderTimelineEvents(forceRefresh = false) {
     const client = getSupabaseClient();
     let session = null;
     if (client) {
-        const { data } = await client.auth.getSession();
-        session = data.session;
+        try {
+            const { data } = await client.auth.getSession();
+            session = data.session;
+        } catch (e) {
+            console.warn('Failed to get session in renderTimelineEvents:', e);
+        }
     }
 
     const disconnected = localStorage.getItem('google-calendar-disconnected') === 'true';
-    const isConnected = !!(session && session.provider_token && !disconnected);
+    const isMock = localStorage.getItem('nexus-mock-google-calendar') === 'true';
+    const isConnected = !!((isMock || (session && session.provider_token)) && !disconnected);
 
     // Set today's date in header
     const headerDateEl = document.getElementById('timeline-header-date');
@@ -1223,7 +1295,8 @@ async function renderTimelineEvents(forceRefresh = false) {
 
     if (isConnected) {
         try {
-            rawEvents = await fetchGoogleCalendarEvents(session.provider_token);
+            const token = isMock ? 'mock-token' : session.provider_token;
+            rawEvents = await fetchGoogleCalendarEvents(token);
         } catch (err) {
             console.error('Error fetching Google Calendar events:', err);
             fetchError = err;
@@ -1482,6 +1555,7 @@ if (typeof window !== 'undefined') {
     window.getGermanDayLabel = getGermanDayLabel;
     window.getGermanFormattedDate = getGermanFormattedDate;
     window.fetchGoogleCalendarEvents = fetchGoogleCalendarEvents;
+    window.fetchGoogleCalendarList = fetchGoogleCalendarList;
     window.renderTimelineEvents = renderTimelineEvents;
     window.initTimelineRefresh = initTimelineRefresh;
     window.loadUserSettings = loadUserSettings;

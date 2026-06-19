@@ -424,7 +424,7 @@ input {
 /* Forecast hour icon */
 .forecast-hour-icon {
     font-size: 24px;
-    color: #ffffff;
+    color: var(--accent-blue);
 }
 
 /* ===================================================================
@@ -1255,30 +1255,46 @@ input {
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-xl);
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
     align-items: center;
-    justify-content: space-between;
-    padding: 0 12px;
+    justify-items: center;
+    padding: 0 8px;
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
     z-index: 1000;
     view-transition-name: app-footer;
 }
 
 .nav-item {
+    position: relative;
     display: flex;
-    flex-direction: row;
     align-items: center;
-    gap: 8px;
-    padding: 8px 14px;
-    border-radius: var(--radius-md);
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
     color: var(--text-secondary);
     background: transparent;
     border: none;
     cursor: pointer;
-    transition: transform var(--transition-fast), background var(--transition-fast), color var(--transition-fast);
+    transition: background var(--transition-fast), color var(--transition-fast), width var(--transition-fast), border-radius var(--transition-fast);
+}
+
+.nav-item .material-symbols-outlined {
+    font-size: 24px;
+    transition: transform var(--transition-fast);
 }
 
 .nav-item .nav-label {
+    position: absolute;
+    left: calc(50% + 14px);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translateX(-8px);
+    transition: opacity var(--transition-fast), transform var(--transition-fast);
+    pointer-events: none;
     display: none;
 }
 
@@ -1287,20 +1303,32 @@ input {
     color: var(--accent-blue);
 }
 
-.nav-item.active .nav-label {
-    display: inline-block;
-    font-size: var(--font-size-sm);
-    font-weight: 600;
-}
-
 .nav-item:hover, .nav-item:focus {
     color: var(--accent-blue);
-    transform: scale(1.05);
 }
 
-.nav-item.active:hover {
-    color: var(--accent-blue);
-    transform: scale(1.03);
+@media (min-width: 768px) {
+    .nav-item {
+        width: 48px;
+    }
+    
+    .nav-item.active {
+        width: 130px;
+        border-radius: var(--radius-md);
+    }
+    
+    .nav-item .nav-label {
+        display: block;
+    }
+    
+    .nav-item.active .material-symbols-outlined {
+        transform: translateX(-24px);
+    }
+    
+    .nav-item.active .nav-label {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
 /* Floating Add Button */

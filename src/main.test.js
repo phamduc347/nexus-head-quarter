@@ -610,6 +610,68 @@ describe('Nexus HQ Core UI Tests', () => {
             expect(parsed.organizer.displayName).toBe('Design Lead');
             expect(parsed.timeStr).toBe('14:00 - 15:00');
         });
+
+        it('should return mock calendar list and events when providerToken is mock-token', async () => {
+            const list = await window.fetchGoogleCalendarList('mock-token');
+            expect(list.length).toBe(2);
+            expect(list[0].summary).toBe('Persönlich (Mock)');
+
+            const events = await window.fetchGoogleCalendarEvents('mock-token');
+            expect(events.length).toBe(3);
+            expect(events[0].summary).toBe('Projekt Sync (Mock)');
+        });
+
+        it('should update status and show Verbunden (Simuliert) when local mock mode is enabled', async () => {
+            document.body.innerHTML = `
+                <div id="google-calendar-status"></div>
+                <div id="google-calendar-list-container"></div>
+                <div id="timeline-events-container"></div>
+            `;
+            
+            const mockAuth = {
+                getSession: vi.fn().mockResolvedValue({ data: { session: { user: { id: 'user-123' } } }, error: null })
+            };
+            const mockSupabase = {
+                auth: mockAuth
+            };
+            window.supabase = {
+                createClient: vi.fn().mockReturnValue(mockSupabase)
+            };
+
+            localStorage.setItem('nexus-mock-google-calendar', 'true');
+            
+            await window.updateGoogleCalendarStatus();
+
+            const status = document.getElementById('google-calendar-status');
+            expect(status.textContent).toContain('Verbunden (Simuliert)');
+
+            const listContainer = document.getElementById('google-calendar-list-container');
+            const items = listContainer.querySelectorAll('label');
+            expect(items.length).toBe(2);
+            expect(items[0].textContent).toBe('Persönlich (Mock)');
+        });
+
+        it('should update status and show Verbunden (Simuliert) when local mock mode is enabled even if Supabase is offline/null', async () => {
+            document.body.innerHTML = `
+                <div id="google-calendar-status"></div>
+                <div id="google-calendar-list-container"></div>
+                <div id="timeline-events-container"></div>
+            `;
+            
+            // Delete Supabase so getSupabaseClient returns null
+            delete window.supabase;
+            localStorage.setItem('nexus-mock-google-calendar', 'true');
+            
+            await window.updateGoogleCalendarStatus();
+
+            const status = document.getElementById('google-calendar-status');
+            expect(status.textContent).toContain('Verbunden (Simuliert)');
+
+            const listContainer = document.getElementById('google-calendar-list-container');
+            const items = listContainer.querySelectorAll('label');
+            expect(items.length).toBe(2);
+            expect(items[0].textContent).toBe('Persönlich (Mock)');
+        });
     });
 });
 
