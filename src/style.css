@@ -984,10 +984,50 @@ input {
 
 
 /* ===================================================================
-   NOTES
+   NOTES WIDGET
    =================================================================== */
-.notes-section {
-    margin-bottom: var(--space-2xl);
+.notes-input-container {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-md);
+}
+
+.notes-input {
+    flex: 1;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 10px var(--space-md);
+    color: var(--text-primary);
+    font-size: var(--font-size-sm);
+    font-family: inherit;
+    resize: none;
+    min-height: 40px;
+    line-height: 1.4;
+    transition: border-color var(--transition-fast);
+}
+
+.notes-input:focus {
+    border-color: var(--accent-blue);
+    outline: none;
+}
+
+.btn-notes-add {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    flex-shrink: 0;
+    height: 40px;
+    width: 40px;
+    border-radius: var(--radius-md);
+    transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.btn-notes-add:hover {
+    background: var(--accent-blue);
+    color: #ffffff;
+    border-color: var(--accent-blue);
 }
 
 .notes-list {
@@ -998,24 +1038,17 @@ input {
 
 .note-item {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: var(--space-md);
     padding: var(--space-md);
-    background: var(--bg-secondary);
+    background: var(--bg-tertiary);
     border-radius: var(--radius-md);
-    border: 1px solid var(--border-color);
-    transition: background var(--transition-fast);
+    border: 1px solid transparent;
+    transition: background var(--transition-fast), border-color var(--transition-fast);
 }
 .note-item:hover {
-    background: var(--bg-tertiary);
-}
-
-.note-icon {
-    color: var(--text-muted);
-    flex-shrink: 0;
-}
-.note-icon .material-symbols-outlined {
-    font-size: 20px;
+    background: var(--bg-hover);
+    border-color: var(--border-color);
 }
 
 .note-content {
@@ -1026,17 +1059,32 @@ input {
     min-width: 0;
 }
 
-.note-title {
-    font-size: var(--font-size-base);
-    font-weight: 500;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+.note-text {
+    font-size: var(--font-size-sm);
+    color: var(--text-primary);
+    line-height: 1.4;
+    word-break: break-word;
+    white-space: pre-wrap;
 }
 
 .note-date {
-    font-size: var(--font-size-xs);
+    font-size: 11px;
     color: var(--text-muted);
+}
+
+.note-delete-btn {
+    opacity: 0.4;
+    color: var(--text-muted);
+    transition: opacity var(--transition-fast), color var(--transition-fast);
+    padding: 2px;
+}
+
+.note-item:hover .note-delete-btn {
+    opacity: 1;
+}
+
+.note-delete-btn:hover {
+    color: var(--accent-red);
 }
 
 

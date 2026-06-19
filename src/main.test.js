@@ -81,14 +81,16 @@ describe('Nexus HQ Core UI Tests', () => {
             expect(widgets[1].dataset.widgetId).toBe('rss');
         });
 
-        it('should add a new widget to the grid', () => {
+        it('should add a new widget to the grid', async () => {
             document.body.innerHTML = `
                 <div id="dashboard-grid"></div>
                 <template id="template-notes"><div class="widget-wrapper" data-widget-id="notes">Notes</div></template>
             `;
 
             const container = document.getElementById('dashboard-grid');
-            window.loadLayout(container); // renders empty + add button
+            // Mock empty layout to avoid default widgets being loaded
+            localStorage.setItem('nexus-dashboard-layout', JSON.stringify([]));
+            await window.loadLayout(container); // renders empty + add button
 
             window.addWidget('notes');
 
@@ -99,6 +101,7 @@ describe('Nexus HQ Core UI Tests', () => {
             // Verify it was saved to localStorage
             const saved = JSON.parse(localStorage.getItem('nexus-dashboard-layout'));
             expect(saved).toEqual(['notes']);
+            localStorage.removeItem('nexus-dashboard-layout');
         });
 
         it('should render the "Add Widget" button at the very top of the grid when loadLayout() is called', () => {

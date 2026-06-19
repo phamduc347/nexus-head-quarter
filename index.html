@@ -274,6 +274,10 @@
                     <span class="material-symbols-outlined ql-blue-icon">bookmark</span>
                     <span>Quicklinks</span>
                 </button>
+                <button class="widget-option-item" data-widget-type="notes">
+                    <span class="material-symbols-outlined ql-amber-icon">edit_note</span>
+                    <span>Notizen</span>
+                </button>
                 <button class="widget-option-item" data-widget-type="weather">
                     <span class="material-symbols-outlined ql-blue-icon">cloud</span>
                     <span>Wetter</span>
@@ -332,6 +336,39 @@
                         <span class="quicklink-label">Links</span>
                     </a>
                 </div>
+            </section>
+        </div>
+    </template>
+
+    <!-- Notizen -->
+    <template id="template-notes">
+        <div class="widget-wrapper" data-widget-id="notes">
+            <div class="widget-controls">
+                <button class="widget-control-btn drag-handle" aria-label="Widget verschieben">
+                    <span class="material-symbols-outlined">drag_indicator</span>
+                </button>
+                <button class="widget-control-btn delete-btn" aria-label="Widget löschen">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <section class="widget widget-notes" aria-label="Notizen">
+                <div class="widget-header">
+                    <div class="widget-header-left">
+                        <div class="widget-icon icon-amber">
+                            <span class="material-symbols-outlined">edit_note</span>
+                        </div>
+                        <h2 class="widget-title">Notizen</h2>
+                    </div>
+                </div>
+                <div class="notes-input-container">
+                    <textarea class="notes-input" placeholder="Neue Notiz... (Enter zum Speichern)" rows="1"></textarea>
+                    <button class="btn-notes-add btn-icon" aria-label="Notiz hinzufügen">
+                        <span class="material-symbols-outlined">add</span>
+                    </button>
+                </div>
+                <ul class="notes-list" id="notes-list-container">
+                    <!-- Dynamic notes -->
+                </ul>
             </section>
         </div>
     </template>

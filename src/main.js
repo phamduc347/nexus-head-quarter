@@ -167,7 +167,7 @@ async function loadLayout(container) {
 
     // Default widgets if none saved
     if (!layout || !Array.isArray(layout)) {
-        layout = ['quicklinks', 'weather', 'rss'];
+        layout = ['quicklinks', 'notes', 'weather', 'rss'];
     }
 
     layout.forEach(type => {
@@ -186,6 +186,11 @@ async function loadLayout(container) {
     const rssWidget = container.querySelector('.widget-rss');
     if (rssWidget) {
         initRSSWidget(rssWidget);
+    }
+
+    const notesWidget = container.querySelector('.widget-notes');
+    if (notesWidget) {
+        initNotesWidget(notesWidget);
     }
 
 }
@@ -519,8 +524,143 @@ function addWidget(type) {
         }
     }
 
+    if (type === 'notes' && newWidget) {
+        const notesEl = newWidget.querySelector('.widget-notes');
+        if (notesEl) {
+            initNotesWidget(notesEl);
+        }
+    }
+
     saveLayout();
 }
+
+/**
+ * NOTES WIDGET LOGIC
+ */
+async function saveNotes(notes) {
+    currentUserSettings.notes = notes;
+
+    // Quick local save
+    localStorage.setItem('nexus-notes', JSON.stringify(notes));
+
+    // Supabase save
+    const client = getSupabaseClient();
+    if (client && currentUser) {
+        try {
+            await client.from('user_settings').upsert({
+                user_id: currentUser.id,
+                settings: currentUserSettings,
+                updated_at: new Date().toISOString()
+            });
+        } catch (e) {
+            console.error('Failed to save notes to Supabase', e);
+        }
+    }
+}
+
+function loadNotes() {
+    if (currentUser && currentUserSettings.notes && Array.isArray(currentUserSettings.notes)) {
+        return currentUserSettings.notes;
+    }
+    try {
+        const local = localStorage.getItem('nexus-notes');
+        if (local) {
+            return JSON.parse(local);
+        }
+    } catch(e) {
+        console.error('Failed to parse local notes', e);
+    }
+    return [];
+}
+
+function renderNotes(notesEl, notesArray) {
+    const listContainer = notesEl.querySelector('#notes-list-container');
+    if (!listContainer) return;
+
+    listContainer.innerHTML = '';
+
+    if (notesArray.length === 0) {
+        listContainer.innerHTML = '<li class="note-item" style="justify-content: center; color: var(--text-muted); font-size: var(--font-size-sm); background: transparent; border: 1px dashed var(--border-color);">Keine Notizen vorhanden.</li>';
+        return;
+    }
+
+    notesArray.forEach((note, index) => {
+        const li = document.createElement('li');
+        li.className = 'note-item';
+
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'note-content';
+
+        const textSpan = document.createElement('span');
+        textSpan.className = 'note-text';
+        textSpan.textContent = note.text;
+
+        const dateSpan = document.createElement('span');
+        dateSpan.className = 'note-date';
+        dateSpan.textContent = note.date;
+
+        contentDiv.appendChild(textSpan);
+        contentDiv.appendChild(dateSpan);
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'btn-icon-sm note-delete-btn';
+        deleteBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px;">delete</span>';
+        deleteBtn.onclick = async () => {
+            notesArray.splice(index, 1);
+            await saveNotes(notesArray);
+            renderNotes(notesEl, notesArray);
+        };
+
+        li.appendChild(contentDiv);
+        li.appendChild(deleteBtn);
+        listContainer.appendChild(li);
+    });
+}
+
+function initNotesWidget(notesEl) {
+    const input = notesEl.querySelector('.notes-input');
+    const addBtn = notesEl.querySelector('.btn-notes-add');
+
+    if (!input || !addBtn) return;
+
+    // Initial Render
+    let currentNotes = loadNotes();
+    renderNotes(notesEl, currentNotes);
+
+    const handleAddNote = async () => {
+        const text = input.value.trim();
+        if (!text) return;
+
+        const newNote = {
+            id: Date.now().toString(),
+            text: text,
+            date: getGermanFormattedDate(new Date().toISOString().split('T')[0])
+        };
+
+        currentNotes.unshift(newNote); // Add to top
+        await saveNotes(currentNotes);
+        renderNotes(notesEl, currentNotes);
+
+        input.value = '';
+    };
+
+    // Add handlers (prevent duplicates)
+    if (!addBtn.dataset.eventsBound) {
+        addBtn.dataset.eventsBound = "true";
+        addBtn.addEventListener('click', handleAddNote);
+    }
+
+    if (!input.dataset.eventsBound) {
+        input.dataset.eventsBound = "true";
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleAddNote();
+            }
+        });
+    }
+}
+
 
 /**
  * Returns weather description and icon symbol for a given WMO code
@@ -1572,6 +1712,10 @@ if (typeof window !== 'undefined') {
     window.renderWeeklyHeader = renderWeeklyHeader;
     window.updateSettingsAvatarPreview = updateSettingsAvatarPreview;
     window.initProfileSettingsListeners = initProfileSettingsListeners;
+    window.saveNotes = saveNotes;
+    window.loadNotes = loadNotes;
+    window.renderNotes = renderNotes;
+    window.initNotesWidget = initNotesWidget;
 }
 
 // ========== AUTHENTICATION LOGIC ==========
@@ -1582,7 +1726,8 @@ let currentUser = null;
 let currentUserSettings = {
     hidden_calendars: [],
     username: '',
-    avatar_url: ''
+    avatar_url: '',
+    notes: []
 };
 
 function updateSettingsAvatarPreview() {
