@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import './main.js'; // Imports the file and registers functions on window
 
 describe('Nexus HQ Core UI Tests', () => {
@@ -416,7 +416,164 @@ describe('Nexus HQ Core UI Tests', () => {
                 settings: expect.objectContaining({ hidden_calendars: ['calendar-4'] })
             }));
         });
+
+        describe('Notes Widget Database Sync', () => {
+            let client;
+
+            beforeEach(() => {
+                window.NEXUS_SUPABASE_URL = 'https://some-project.supabase.co';
+                window.NEXUS_SUPABASE_ANON_KEY = 'some-anon-key';
+                client = window.getSupabaseClient();
+
+                client.insert = vi.fn().mockReturnThis();
+                client.select = vi.fn().mockReturnThis();
+                client.eq = vi.fn().mockReturnThis();
+                client.from = vi.fn().mockReturnThis();
+                
+                client.order = vi.fn().mockResolvedValue({ data: [], error: null });
+                client.single = vi.fn().mockResolvedValue({ data: null, error: null });
+                client.maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+                client.delete = vi.fn().mockReturnThis();
+            });
+
+            afterEach(() => {
+                if (client) {
+                    client.from = vi.fn().mockReturnThis();
+                    client.select = vi.fn().mockReturnThis();
+                    client.eq = vi.fn().mockReturnThis();
+                    client.order = vi.fn().mockResolvedValue({ data: [], error: null });
+                    client.single = vi.fn().mockResolvedValue({ data: null, error: null });
+                    client.maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+                    client.delete = vi.fn().mockReturnThis();
+                    delete client.insert;
+                }
+            });
+
+            it('should load notes from Supabase notes table when logged in', async () => {
+                vi.spyOn(client, 'from');
+                vi.spyOn(client, 'select');
+                
+                client.order = vi.fn().mockResolvedValue({
+                    data: [
+                        { id: 'note-uuid-1', content: 'Supabase Note', created_at: '2026-06-19T20:00:00Z' }
+                    ],
+                    error: null
+                });
+
+                window.handleAuthStateChange('INITIAL', { user: { id: 'user-123', email: 'user@nexus.com' } });
+                await new Promise(resolve => setTimeout(resolve, 10));
+
+                expect(client.from).toHaveBeenCalledWith('notes');
+                expect(window.loadNotes()).toEqual([
+                    { id: 'note-uuid-1', text: 'Supabase Note', date: '19. Juni' }
+                ]);
+                expect(JSON.parse(localStorage.getItem('nexus-notes'))).toEqual([
+                    { id: 'note-uuid-1', text: 'Supabase Note', date: '19. Juni' }
+                ]);
+            });
+
+            it('should fallback to localStorage when guest/offline', () => {
+                window.handleAuthStateChange('SIGNED_OUT', null);
+                localStorage.setItem('nexus-notes', JSON.stringify([
+                    { id: 'guest-1', text: 'Local Note', date: '18.06.2026' }
+                ]));
+
+                expect(window.loadNotes()).toEqual([
+                    { id: 'guest-1', text: 'Local Note', date: '18.06.2026' }
+                ]);
+            });
+
+            it('should insert a note into the Supabase notes table and update local cache/UI when logged in', async () => {
+                window.handleAuthStateChange('INITIAL', { user: { id: 'user-123', email: 'user@nexus.com' } });
+                await new Promise(resolve => setTimeout(resolve, 10));
+
+                vi.spyOn(client, 'from');
+                vi.spyOn(client, 'insert');
+
+                client.single = vi.fn().mockResolvedValue({
+                    data: { id: 'new-note-uuid', content: 'New DB Note', created_at: '2026-06-19T21:00:00Z' },
+                    error: null
+                });
+
+                const notesEl = document.createElement('div');
+                notesEl.innerHTML = `
+                    <input class="notes-input" value="New DB Note" />
+                    <button class="btn-notes-add"></button>
+                    <ul id="notes-list-container"></ul>
+                `;
+
+                window.initNotesWidget(notesEl);
+
+                const addBtn = notesEl.querySelector('.btn-notes-add');
+                await addBtn.click();
+
+                await new Promise(resolve => setTimeout(resolve, 10));
+
+                expect(client.from).toHaveBeenCalledWith('notes');
+                expect(client.insert).toHaveBeenCalledWith({
+                    content: 'New DB Note',
+                    user_id: 'user-123'
+                });
+
+                expect(window.loadNotes()).toContainEqual({
+                    id: 'new-note-uuid',
+                    text: 'New DB Note',
+                    date: '19. Juni'
+                });
+
+                const items = notesEl.querySelectorAll('.note-item');
+                expect(items.length).toBe(1);
+                expect(items[0].querySelector('.note-text').textContent).toBe('New DB Note');
+            });
+
+            it('should delete a note from the Supabase notes table and update local cache/UI when logged in', async () => {
+                client.order = vi.fn().mockResolvedValue({
+                    data: [
+                        { id: 'note-uuid-1', content: 'Note to delete', created_at: '2026-06-19T20:00:00Z' }
+                    ],
+                    error: null
+                });
+
+                window.handleAuthStateChange('INITIAL', { user: { id: 'user-123', email: 'user@nexus.com' } });
+                await new Promise(resolve => setTimeout(resolve, 10));
+
+                vi.spyOn(client, 'from');
+                vi.spyOn(client, 'delete');
+                vi.spyOn(client, 'eq');
+
+                const notesEl = document.createElement('div');
+                notesEl.innerHTML = `
+                    <input class="notes-input" value="" />
+                    <button class="btn-notes-add"></button>
+                    <ul id="notes-list-container"></ul>
+                `;
+
+                window.initNotesWidget(notesEl);
+
+                const itemsBefore = notesEl.querySelectorAll('.note-item');
+                expect(itemsBefore.length).toBe(1);
+
+                client.delete = vi.fn().mockReturnThis();
+                client.eq = vi.fn().mockResolvedValue({ error: null });
+
+                const deleteBtn = notesEl.querySelector('.note-delete-btn');
+                await deleteBtn.click();
+
+                await new Promise(resolve => setTimeout(resolve, 10));
+
+                expect(client.from).toHaveBeenCalledWith('notes');
+                expect(client.delete).toHaveBeenCalled();
+                expect(client.eq).toHaveBeenCalledWith('id', 'note-uuid-1');
+
+                expect(window.loadNotes()).toEqual([]);
+
+                const itemsAfter = notesEl.querySelectorAll('.note-item');
+                expect(itemsAfter.length).toBe(1);
+                expect(itemsAfter[0].textContent).toBe('Keine Notizen vorhanden.');
+            });
+        });
     });
+
 
     describe('Weather Widget API Mapping', () => {
         it('should correctly translate WMO codes to German descriptions and symbols', () => {

@@ -538,29 +538,16 @@ function addWidget(type) {
  * NOTES WIDGET LOGIC
  */
 async function saveNotes(notes) {
-    currentUserSettings.notes = notes;
-
+    if (currentUser) {
+        currentUserNotes = notes;
+    }
     // Quick local save
     localStorage.setItem('nexus-notes', JSON.stringify(notes));
-
-    // Supabase save
-    const client = getSupabaseClient();
-    if (client && currentUser) {
-        try {
-            await client.from('user_settings').upsert({
-                user_id: currentUser.id,
-                settings: currentUserSettings,
-                updated_at: new Date().toISOString()
-            });
-        } catch (e) {
-            console.error('Failed to save notes to Supabase', e);
-        }
-    }
 }
 
 function loadNotes() {
-    if (currentUser && currentUserSettings.notes && Array.isArray(currentUserSettings.notes)) {
-        return currentUserSettings.notes;
+    if (currentUser) {
+        return currentUserNotes;
     }
     try {
         const local = localStorage.getItem('nexus-notes');
@@ -571,6 +558,24 @@ function loadNotes() {
         console.error('Failed to parse local notes', e);
     }
     return [];
+}
+
+async function loadNotesFromSupabase() {
+    const client = getSupabaseClient();
+    if (client && currentUser) {
+        try {
+            const { data, error } = await client.from('notes').select('*').order('created_at', { ascending: false });
+            if (error) throw error;
+            currentUserNotes = (data || []).map(n => ({
+                id: n.id,
+                text: n.content,
+                date: getGermanFormattedDate(n.created_at ? n.created_at.split('T')[0] : new Date().toISOString().split('T')[0])
+            }));
+            localStorage.setItem('nexus-notes', JSON.stringify(currentUserNotes));
+        } catch (e) {
+            console.error('Failed to load notes from Supabase:', e);
+        }
+    }
 }
 
 function renderNotes(notesEl, notesArray) {
@@ -606,6 +611,17 @@ function renderNotes(notesEl, notesArray) {
         deleteBtn.className = 'btn-icon-sm note-delete-btn';
         deleteBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px;">delete</span>';
         deleteBtn.onclick = async () => {
+            const noteToDelete = notesArray[index];
+            const client = getSupabaseClient();
+            if (client && currentUser) {
+                try {
+                    const { error } = await client.from('notes').delete().eq('id', noteToDelete.id);
+                    if (error) throw error;
+                } catch (e) {
+                    console.error('Failed to delete note from Supabase:', e);
+                }
+            }
+
             notesArray.splice(index, 1);
             await saveNotes(notesArray);
             renderNotes(notesEl, notesArray);
@@ -632,10 +648,28 @@ function initNotesWidget(notesEl) {
         if (!text) return;
 
         const newNote = {
-            id: Date.now().toString(),
+            id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(),
             text: text,
             date: getGermanFormattedDate(new Date().toISOString().split('T')[0])
         };
+
+        const client = getSupabaseClient();
+        if (client && currentUser) {
+            try {
+                const { data, error } = await client.from('notes').insert({
+                    content: text,
+                    user_id: currentUser.id
+                }).select().single();
+                
+                if (error) throw error;
+                if (data) {
+                    newNote.id = data.id;
+                    newNote.date = getGermanFormattedDate(data.created_at.split('T')[0]);
+                }
+            } catch (e) {
+                console.error('Failed to save note to Supabase:', e);
+            }
+        }
 
         currentNotes.unshift(newNote); // Add to top
         await saveNotes(currentNotes);
@@ -1722,12 +1756,12 @@ if (typeof window !== 'undefined') {
 
 let supabaseClient = null;
 let currentUser = null;
+let currentUserNotes = [];
 
 let currentUserSettings = {
     hidden_calendars: [],
     username: '',
-    avatar_url: '',
-    notes: []
+    avatar_url: ''
 };
 
 function updateSettingsAvatarPreview() {
@@ -1829,6 +1863,7 @@ async function loadUserSettings() {
         if (usernameInput) {
             usernameInput.value = currentUserSettings.username || '';
         }
+        await loadNotesFromSupabase();
         updateSettingsAvatarPreview();
         updateAvatar();
     } catch (e) {
@@ -2077,6 +2112,7 @@ function handleAuthStateChange(event, session) {
             
             // Reset settings on sign-out
             currentUserSettings = { hidden_calendars: [] };
+            currentUserNotes = [];
 
             // Deactivate all screens and activate auth screen
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
